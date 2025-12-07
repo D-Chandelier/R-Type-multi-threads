@@ -8,15 +8,26 @@
 #include "Packets/ClientInput.hpp"
 #include "Packets/PlayerState.hpp"
 #include "Packets/Snapshot.hpp"
+#include "../Gameplay/RemotePlayers.hpp"
 
 // Callback type for snapshot received
 using SnapshotCallback = void (*)(uint32_t tick, const std::vector<PlayerState> &players);
+
+enum class ClientState
+{
+    DISCONNECTED,
+    CONNECTING,
+    CONNECTED
+};
 
 class Client
 {
 public:
     Client();
     ~Client();
+
+    void update(float dt);
+    ClientState ConnexionState = ClientState::DISCONNECTED;
 
     bool start();
     void stop();
@@ -29,6 +40,9 @@ public:
 
     // registre callback pour snapshots
     void setSnapshotCallback(SnapshotCallback cb);
+
+    uint32_t playerId;
+    std::map<uint32_t, RemotePlayer> remotePlayers;
 
 private:
     void networkThreadFunc();

@@ -40,6 +40,11 @@ void Client::stop()
     enet_deinitialize();
 }
 
+void Client::update(float dt)
+{
+    // TODO: update server logic
+}
+
 bool Client::connectTo(const char *hostaddr, uint16_t port)
 {
     if (!clientHost)

@@ -132,8 +132,8 @@ void Game::run()
         }
 
         // --- Update serveur et client TOUJOURS ---
-        server.update();       // traite connexions et snapshots
-        client.update(player); // traite connexion, packets, déconnexion
+        server.update(dt); // traite connexions et snapshots
+        client.update(dt); // traite connexion, packets, déconnexion
 
         // --- Jouer si connecté ---
         if (state == GameState::PLAYING &&

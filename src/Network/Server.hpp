@@ -29,7 +29,7 @@ public:
 
     bool start(uint16_t port);
     void stop();
-
+    void update(float dt);
     // expose si besoin : push input depuis autre thread (non utilisé ici)
     void pushInput(const ClientInput &in);
 

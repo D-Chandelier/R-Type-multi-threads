@@ -48,7 +48,13 @@ void Player::update(float dt, BulletManager &bullets)
     bool shooting = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
 
     // if (move.x != 0.f || move.y != 0.f)
-    client->sendInput(*this, move, dt, shooting);
+    ClientInput in;
+    in.playerId = id;
+    in.dx = move.x;
+    in.dy = move.y;
+    in.shooting = shooting ? 1 : 0;
+
+    client->sendInput(in);
 
     // appliquer la position du snapshot serveur
     if (client->playerId != UINT32_MAX && client->remotePlayers.count(client->playerId))

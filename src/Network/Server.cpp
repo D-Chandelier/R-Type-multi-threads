@@ -62,6 +62,10 @@ void Server::pushInput(const ClientInput &in)
     inputQueue.push(in);
 }
 
+void Server::update(float dt)
+{
+    // TODO: update server logic
+}
 /////////////////////////
 // THREAD RESEAU
 /////////////////////////
