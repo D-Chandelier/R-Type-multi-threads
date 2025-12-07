@@ -1,13 +1,20 @@
 ﻿#pragma once
 #include <SFML/Graphics.hpp>
-#include "../Gameplay/Player.hpp"
-#include "../Gameplay/RemotePlayers.hpp"
-#include "../Gameplay/BulletManager.hpp"
-#include "../Gameplay/EnemyManager.hpp"
+#include <thread>
+#include <chrono>
+#include <atomic>
+#include <iostream>
+
+#include "../Core/MenuServersList.hpp"
+#include "../Core/MenuMain.hpp"
+
+#include "../Network/Server.hpp"
+#include "../Network/NetworkDiscovery.hpp"
 #include "../Network/Server.hpp"
 #include "../Network/Client.hpp"
+
 #include "GameState.hpp"
-#include "Menu.hpp"
+#include "Config.hpp"
 
 class Game
 {
@@ -23,12 +30,9 @@ private:
     sf::Clock clock;
     Server server;
     Client client;
-    Menu menu;
+    MenuMain menuMain;
 
     sf::RenderWindow window;
-    Player player;
-    BulletManager bullets;
-    EnemyManager enemies;
 
     float enemySpawnTimer = 0.f;
     float spawnInterval = 2.0f; // spawn toutes les 2 sec

@@ -4,7 +4,9 @@ enum class GameState
 {
     MENU_MAIN,
     MENU_IN_GAME,
+    MENU_JOIN,
     MENU_OPTIONS,
-    PLAYING,
-    SOLO_PAUSE
+    GAME_LOCAL,
+    GAME_CLIENT,
+    QUIT
 };

@@ -19,14 +19,26 @@ public:
     // ====== PARAMÈTRES MODIFIABLES ======
     std::string title = "R-Type";
     sf::Vector2u windowSize{1280, 800};
+    sf::Color backgroundColor = sf::Color(30, 30, 30);
+    sf::Color fontColor = sf::Color::White;
+    sf::Color overColor = sf::Color(255, 200, 0); // Jaune
+    sf::Font font;
+
     uint32_t id = 0;
     std::string playerName = "001";
     std::string serverIp = "127.0.0.1";
     uint16_t serverPort = 1234;
+    uint16_t discoveryPort = 37020;
     uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = 300.f;
 
 private:
-    Config() = default; // constructeur privé → Singleton
+    Config()
+    {
+        if (!font.openFromFile("assets/kenvector_future_thin.ttf"))
+        {
+            std::cerr << "[CONFIG] Impossible de charger la font\n";
+        }
+    }
 };
