@@ -1,35 +1,38 @@
 ﻿#pragma once
-
-#include <SFML/Graphics.hpp>
-#include <iostream>
-#include <vector>
-#include <string>
 #include <set>
+#include <thread>
+#include <mutex>
 
-#include "../Network/NetworkDiscovery.hpp"
 #include "../Network/Client.hpp"
-
+#include "../Network/NetworkDiscovery.hpp"
 #include "Config.hpp"
-#include "Game.hpp"
-#include "GameState.hpp"
-#include "MenuMain.hpp"
-
-struct MenuServerStar
+#include "IMenu.hpp"
+class MenuServersList : public IMenu
 {
-    sf::Vector2f pos;
-    float speed;
-    float size;
-    sf::Color color;
-};
-extern std::vector<MenuServerStar> serverStars;
+    std::vector<DiscoveredServer> servers;
+    std::vector<sf::Text> serverTexts;
+    std::mutex serversMutex; // protège l'accès concurrent
+    bool refreshRequested = false;
 
-class MenuServersList
-{
+    // Sabler/loader
+    sf::VertexArray loader;
+    sf::Text loaderText;
+    float startAngle = 0.f;
 
 public:
-    MenuServersList();
-    MenuResult showServerList(sf::RenderWindow &window, Client &client, uint16_t discoveryPort = 5000);
+    MenuServersList(Client &cli);
+
+    void requestRefresh() { refreshRequested = true; };
+    void update(float dt, sf::RenderWindow &w) override;
+    void handleEvent(const sf::Event &e, sf::RenderWindow &w) override;
+    void draw(sf::RenderWindow &w) override;
+    MenuAction getAction() const override { return action; };
+    void reset() override;
+    void updateLoader();
 
 private:
-    sf::Text title, ssTitle, quit;
+    Client &client;
+    sf::Text title, quit;
+    MenuAction action = MenuAction::NONE;
+    int hoveredIndex = -1;
 };

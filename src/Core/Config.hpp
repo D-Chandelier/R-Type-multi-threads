@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <iostream>
 
 class Config
 {
@@ -21,7 +22,7 @@ public:
     sf::Vector2u windowSize{1280, 800};
     sf::Color backgroundColor = sf::Color(30, 30, 30);
     sf::Color fontColor = sf::Color::White;
-    sf::Color overColor = sf::Color(255, 200, 0); // Jaune
+    sf::Color hoverColor = sf::Color(255, 200, 0); // Jaune
     sf::Font font;
 
     uint32_t id = 0;
@@ -32,6 +33,7 @@ public:
     uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = 300.f;
+    float frameRate = 0.016f; // 60 hertz
 
 private:
     Config()

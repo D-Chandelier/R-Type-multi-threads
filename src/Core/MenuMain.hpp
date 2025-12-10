@@ -1,38 +1,19 @@
 ﻿#pragma once
-#include <SFML/Graphics.hpp>
-#include <iostream>
-#include <vector>
-#include <string>
-
+#include "IMenu.hpp"
 #include "Config.hpp"
 
-struct MenuStar
-{
-    sf::Vector2f pos;
-    float speed;
-    float size;
-    sf::Color color;
-};
-extern std::vector<MenuStar> stars;
-
-enum class MenuResult
-{
-    NONE,
-    PLAY,
-    JOIN,
-    QUIT
-};
-
-class MenuMain
+class MenuMain : public IMenu
 {
 public:
     MenuMain();
-    MenuResult show(sf::RenderWindow &window);
+
+    void update(float dt, sf::RenderWindow &w) override;
+    void handleEvent(const sf::Event &e, sf::RenderWindow &w) override;
+    void draw(sf::RenderWindow &w) override;
+    MenuAction getAction() const override { return action; };
+    void reset() override; // { action = MenuAction::NONE; };
 
 private:
-    MenuResult handleClick(const sf::Vector2f &pos);
-    sf::Text title;
-    sf::Text play;
-    sf::Text join;
-    sf::Text quit;
+    sf::Text play, join, quit;
+    MenuAction action = MenuAction::NONE;
 };

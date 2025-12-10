@@ -8,8 +8,12 @@ struct DiscoveredServer
 {
     std::string ip;
     uint16_t port;
-};
 
+    bool operator==(const DiscoveredServer &other) const
+    {
+        return ip == other.ip && port == other.port;
+    }
+};
 class NetworkDiscovery
 {
 public:
