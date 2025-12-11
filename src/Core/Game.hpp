@@ -4,6 +4,7 @@
 #include "IMenu.hpp"
 #include "MenuMain.hpp"
 #include "MenuServersList.hpp"
+#include "MenuOption.hpp"
 #include "GameState.hpp"
 
 #include "../Network/Client.hpp"
@@ -24,6 +25,7 @@ private:
 
     MenuMain menuMain;
     MenuServersList menuServers;
+    MenuOption menuOption;
     IMenu *currentMenu = nullptr;
 
     Server server;

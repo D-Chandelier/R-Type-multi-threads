@@ -8,6 +8,7 @@ enum class MenuAction
     QUIT_APP,
     GO_TO_MAIN_MENU,
     GO_TO_SERVER_LIST,
+    GO_TO_OPTION_MENU,
     START_GAME,
     JOIN_SERVER
 };
@@ -30,12 +31,10 @@ public:
     Background(const sf::Font &font)
         : title(font)
     {
-        // title.setFont(font);
         title.setString(Config::Get().title);
         title.setCharacterSize(80);
-        sf::FloatRect b = title.getLocalBounds();
-        title.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        title.setPosition({Config::Get().windowSize.x / 2.f, Config::Get().windowSize.y / 8.f});
+        title.setOrigin(title.getLocalBounds().getCenter());
+        title.setPosition({Config::Get().windowSize.x / 2.f, Config::Get().windowSize.y / 10.f});
 
         stars.reserve(50);
         for (int i = 0; i < 50; i++)

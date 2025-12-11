@@ -29,7 +29,7 @@ public:
     std::string playerName = "001";
     std::string serverIp = "127.0.0.1";
     uint16_t serverPort = 1234;
-    uint16_t discoveryPort = 37020;
+    uint16_t discoveryPort = serverPort + 1;
     uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = 300.f;

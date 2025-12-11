@@ -18,6 +18,21 @@ class MenuServersList : public IMenu
     sf::VertexArray loader;
     sf::Text loaderText;
     float startAngle = 0.f;
+    sf::Text ipLabel;
+    sf::Text ipField;
+
+    sf::Text portLabel;
+    sf::Text portField;
+
+    bool ipFocused = false;
+    bool portFocused = false;
+
+    sf::Text testButton;
+    sf::Text testStatus;
+
+    bool testing = false;       // indique si un test est en cours
+    std::string lastTestResult; // vide si aucun
+    sf::Color lastTestColor = sf::Color::Transparent;
 
 public:
     MenuServersList(Client &cli);

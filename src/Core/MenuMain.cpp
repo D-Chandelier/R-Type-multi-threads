@@ -3,14 +3,27 @@
 MenuMain::MenuMain()
     : play(Config::Get().font),
       join(Config::Get().font),
+      option(Config::Get().font),
       quit(Config::Get().font)
 {
+    float cx = Config::Get().windowSize.x / 2.f;
+    float cy = Config::Get().windowSize.y / 10.f;
+
     play.setString("Jouer (serveur)");
-    play.setOrigin({play.getLocalBounds().size.x / 2, play.getLocalBounds().size.y / 2});
+    play.setOrigin(play.getLocalBounds().getCenter());
+    play.setPosition({cx, cy * 3});
+
     join.setString("Rejoindre un serveur");
-    join.setOrigin({join.getLocalBounds().size.x / 2, join.getLocalBounds().size.y / 2});
+    join.setOrigin(join.getLocalBounds().getCenter());
+    join.setPosition({cx, cy * 4});
+
+    option.setString("Options");
+    option.setOrigin(option.getLocalBounds().getCenter());
+    option.setPosition({cx, cy * 5});
+
     quit.setString("Quitter");
-    quit.setOrigin({quit.getLocalBounds().size.x / 2, quit.getLocalBounds().size.y / 2});
+    quit.setOrigin(quit.getLocalBounds().getCenter());
+    quit.setPosition({cx, cy * 9});
 
     reset();
 }
@@ -18,12 +31,6 @@ MenuMain::MenuMain()
 void MenuMain::reset()
 {
     action = MenuAction::NONE;
-
-    float cx = Config::Get().windowSize.x / 2.f;
-
-    play.setPosition({cx, 300});
-    join.setPosition({cx, 400});
-    quit.setPosition({cx, 600});
 }
 
 void MenuMain::update(float dt, sf::RenderWindow &w)
@@ -39,6 +46,7 @@ void MenuMain::update(float dt, sf::RenderWindow &w)
     };
     hover(play);
     hover(join);
+    hover(option);
     hover(quit);
 }
 
@@ -57,6 +65,9 @@ void MenuMain::handleEvent(const sf::Event &e, sf::RenderWindow &w)
         if (join.getGlobalBounds().contains(mp))
             action = MenuAction::GO_TO_SERVER_LIST;
 
+        if (option.getGlobalBounds().contains(mp))
+            action = MenuAction::GO_TO_OPTION_MENU;
+
         if (quit.getGlobalBounds().contains(mp))
             action = MenuAction::QUIT_APP;
     }
@@ -66,5 +77,6 @@ void MenuMain::draw(sf::RenderWindow &w)
 {
     w.draw(play);
     w.draw(join);
+    w.draw(option);
     w.draw(quit);
 }

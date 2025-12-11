@@ -27,7 +27,8 @@ Game::Game()
     : window(sf::VideoMode(Config::Get().windowSize),
              Config::Get().title),
       menuMain(),
-      menuServers(client)
+      menuServers(client),
+      menuOption()
 {
     currentMenu = &menuMain;
 }
@@ -55,8 +56,13 @@ void Game::run()
             {
                 if (e->code == sf::Keyboard::Key::Escape)
                 {
-                    std::cout << "ESC pressed - state=" << (int)state << std::endl;
                     if (state == GameState::MENU_JOIN)
+                    {
+                        state = GameState::MENU_MAIN;
+                        currentMenu = &menuMain;
+                        currentMenu->reset();
+                    }
+                    else if (state == GameState::MENU_OPTION)
                     {
                         state = GameState::MENU_MAIN;
                         currentMenu = &menuMain;
@@ -99,7 +105,9 @@ void Game::run()
         window.clear(Config::Get().backgroundColor);
         bg.draw(window);
 
-        if (state == GameState::MENU_MAIN || state == GameState::MENU_JOIN)
+        if (state == GameState::MENU_MAIN ||
+            state == GameState::MENU_JOIN ||
+            state == GameState::MENU_OPTION)
             currentMenu->draw(window);
         else if (state == GameState::IN_GAME)
             drawGameplay(window);
@@ -134,6 +142,12 @@ void Game::handleMenuAction()
         state = GameState::MENU_JOIN;
         menuServers.reset();
         currentMenu = &menuServers;
+        break;
+
+    case MenuAction::GO_TO_OPTION_MENU:
+        state = GameState::MENU_OPTION;
+        menuOption.reset();
+        currentMenu = &menuOption;
         break;
 
     case MenuAction::START_GAME:
