@@ -1,74 +1,28 @@
 ﻿#include "Server.hpp"
-#include <sstream>
 
-Server::Server()
-    : host(nullptr)
-{
-    // On initialise ENet ici pour le serveur.
-    // NOTE: si tu as aussi un Client qui dépend d'ENet, évite d'appeler enet_deinitialize()
-    // dans le destructeur du Server — on le gèrera globalement ailleurs si nécessaire.
-    if (enet_initialize() != 0)
-    {
-        std::cerr << "[Server] ENet init failed\n";
-    }
-}
-
-Server::~Server()
-{
-    // Stop discovery thread proprement
-    runningDiscovery = false;
-    if (discoveryThread.joinable())
-        discoveryThread.join();
-
-    // Détruire l'host ENet
-    if (host)
-        enet_host_destroy(host);
-
-    // Ne pas appeler enet_deinitialize() ici si d'autres composants utilisent ENet.
-}
-
-void Server::startDiscovery()
-{
-    // Lance le thread membre discoveryThread (clé : ne PAS créer une variable locale)
-    runningDiscovery = true;
-    discoveryThread = std::thread([this]()
-                                  {
-        while (this->runningDiscovery) {
-            // envoie le port du serveur via NetworkDiscovery (SFML UDP)
-            this->networkDiscovery.broadcastServer(Config::Get().serverPort, Config::Get().discoveryPort);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        } });
-}
+Server::Server() : host(nullptr) {}
+Server::~Server() { stop(); }
 
 bool Server::start(uint16_t port)
 {
+    std::lock_guard<std::mutex> lock(mtx);
+    players.clear();
+
     ENetAddress address;
     address.host = ENET_HOST_ANY;
     address.port = port;
 
     host = enet_host_create(&address, 32, 2, 0, 0);
     if (!host)
-    {
-        std::cerr << "[Server] Failed to create ENet server host\n";
         return false;
-    }
 
     std::cout << "[Server] started on port " << port << "\n";
-    // this->gamePort = port;
-
-    // Lancer la découverte réseau (thread membre)
-    startDiscovery();
-
     return true;
 }
 
 void Server::stop()
 {
-    // méthode publique pour arrêter le serveur proprement
-    runningDiscovery = false;
-    if (discoveryThread.joinable())
-        discoveryThread.join();
-
+    std::lock_guard<std::mutex> lock(mtx);
     if (host)
     {
         enet_host_flush(host);
@@ -79,6 +33,7 @@ void Server::stop()
 
 void Server::update(float dt)
 {
+    std::lock_guard<std::mutex> lock(mtx);
     if (!host)
         return;
 
@@ -89,33 +44,59 @@ void Server::update(float dt)
         {
         case ENET_EVENT_TYPE_CONNECT:
         {
-            std::cout << "[Server] client connected\n";
-            std::lock_guard<std::mutex> lock(mtx);
-            players.push_back({static_cast<uint32_t>(players.size()), 0.f, 0.f});
+            if (players.size() < Config::Get().maxPlayers)
+            {
+                uint32_t newId = static_cast<uint32_t>(players.size());
+                players.push_back({newId, 0.f, 0.f, event.peer});
+
+                std::ostringstream ss;
+                ss << "ID:" << newId;
+                std::string msg = ss.str();
+                ENetPacket *packet = enet_packet_create(msg.c_str(), msg.size() + 1, ENET_PACKET_FLAG_RELIABLE);
+                enet_peer_send(event.peer, 0, packet);
+                std::cout << "[Server] Client connected, assigned ID: " << newId << "\n";
+            }
+            else
+            {
+                // Serveur plein → joueur spectateur
+                std::cout << "[Server] Client connected as spectator\n";
+                ENetPacket *packet = enet_packet_create("SPECTATOR", 10, ENET_PACKET_FLAG_RELIABLE);
+                enet_peer_send(event.peer, 0, packet);
+            }
             break;
         }
         case ENET_EVENT_TYPE_RECEIVE:
         {
-            const char *msg = reinterpret_cast<const char *>(event.packet->data);
-            if (msg && strcmp(msg, "PING") == 0)
+            if (event.packet)
             {
-                std::cout << "[Server] received PING\n";
-                ENetPacket *reply = enet_packet_create("PONG", 5, ENET_PACKET_FLAG_UNSEQUENCED);
-                enet_peer_send(event.peer, 0, reply);
+                std::cout << "[Server] received: " << reinterpret_cast<const char *>(event.packet->data) << "\n";
+
+                PacketHeader *h = reinterpret_cast<PacketHeader *>(event.packet->data);
+
+                if (h->type == PacketType::CLIENT_MSG)
+                {
+                    ClientMsg msg = static_cast<ClientMsg>(h->code);
+                    onClientMessage(event.peer, msg);
+                }
+
+                enet_packet_destroy(event.packet);
             }
-            else if (msg)
-            {
-                std::cout << "[Server] received: " << msg << "\n";
-            }
-            enet_packet_destroy(event.packet);
             break;
         }
         case ENET_EVENT_TYPE_DISCONNECT:
         {
-            std::cout << "[Server] client disconnected\n";
-            std::lock_guard<std::mutex> lock(mtx);
-            if (!players.empty())
-                players.pop_back();
+            // Retirer le joueur si c'était un joueur normal
+            auto it = std::find_if(players.begin(), players.end(), [&](const RemotePlayer &p)
+                                   { return p.peer == event.peer; });
+            if (it != players.end())
+            {
+                std::cout << "[Server] Client disconnected, ID: " << it->id << "\n";
+                players.erase(it);
+            }
+            else
+            {
+                std::cout << "[Server] Spectator disconnected\n";
+            }
             break;
         }
         default:
@@ -124,12 +105,34 @@ void Server::update(float dt)
     }
 }
 
+void Server::onClientMessage(ENetPeer *peer, ClientMsg msg)
+{
+    switch (msg)
+    {
+    case ClientMsg::REQUEST_NEW_GAME:
+        std::cout << "[SERVEUR] receive -> REQUEST_NEW_GAME\n";
+        // resetGame();
+        // addPlayer(peer);
+        // send(peer, ServerMsg::GAME_CREATED);
+        // broadcast(ServerMsg::START_GAME);
+        break;
+
+    case ClientMsg::REQUEST_JOIN_GAME:
+        std::cout << "[SERVEUR] receive -> REQUEST_JOIN_GAME\n";
+
+        // addPlayer(peer);
+        // send(peer, ServerMsg::GAME_JOINED);
+        // if (gameAlreadyStarted)
+        //     send(peer, ServerMsg::START_GAME);
+        break;
+    }
+}
+
 void Server::broadcastPositions()
 {
+    std::lock_guard<std::mutex> lock(mtx);
     if (!host)
         return;
-
-    std::lock_guard<std::mutex> lock(mtx);
 
     // pour chaque player on envoie sa position à chaque peer connecté
     for (auto &player : players)

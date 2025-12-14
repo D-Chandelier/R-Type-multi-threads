@@ -5,9 +5,13 @@
 #include <vector>
 #include <mutex>
 #include <thread>
+#include <sstream>
+#include <cstring>
+#include <algorithm>
 
 #include "../Core/Config.hpp"
 
+#include "Packets/Messages.hpp"
 #include "RemotePlayers.hpp"
 #include "NetworkDiscovery.hpp"
 
@@ -17,21 +21,16 @@ public:
     Server();
     ~Server();
 
-    void startDiscovery();
     bool start(uint16_t port);
     void stop();
     void update(float dt);
+    void onClientMessage(ENetPeer *peer, ClientMsg msg);
     void broadcastPositions(); // envoie positions à tous les clients
 
     std::vector<RemotePlayer> getPlayers(); // accès thread-safe
 
 private:
     ENetHost *host = nullptr;
-    std::vector<RemotePlayer> players;
     std::mutex mtx; // protège players
-
-    // contrôle du thread de découverte (local au serveur)
-    bool runningDiscovery = false;
-    std::thread discoveryThread;
-    NetworkDiscovery networkDiscovery;
+    std::vector<RemotePlayer> players;
 };

@@ -1,8 +1,12 @@
 ﻿#pragma once
 #include <SFML/Network.hpp>
+#include <sstream>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <mutex>
+#include <thread>
+#include <atomic>
 
 struct DiscoveredServer
 {
@@ -17,12 +21,19 @@ struct DiscoveredServer
 class NetworkDiscovery
 {
 public:
-    NetworkDiscovery() = default;
-    ~NetworkDiscovery() = default;
+    NetworkDiscovery() : listening(false) {}
+    void startBroadcast(uint16_t gamePort, uint16_t discoveryPort);
+    void stopBroadcast();
+    void startListening(uint16_t discoveryPort);
+    void stopListening();
+    std::vector<DiscoveredServer> getDiscoveredServers();
 
-    // Broadcast du serveur sur le LAN
-    void broadcastServer(uint16_t gamePort, uint16_t discoveryPort = 4445);
+private:
+    std::atomic<bool> broadcasting{false};
+    std::atomic<bool> listening{false};
+    std::thread broadcastThread;
+    std::thread listenThread;
 
-    // Scanner le LAN à la recherche de serveurs
-    std::vector<DiscoveredServer> scanLAN(uint16_t discoveryPort = 4445, unsigned int timeoutMs = 1000);
+    std::vector<DiscoveredServer> discoveredServers;
+    std::mutex mtx;
 };

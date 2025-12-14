@@ -4,7 +4,16 @@
 
 int main()
 {
-    Game game;
-    game.run();
+    if (enet_initialize() != 0) {
+        std::cerr << "ENet init failed\n";
+        return 1;
+    }
+
+    {
+        Game game;
+        game.run();
+    }
+
+    enet_deinitialize();
     return 0;
 }

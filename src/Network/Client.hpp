@@ -4,6 +4,10 @@
 #include <vector>
 #include <mutex>
 #include <atomic>
+
+#include "../Core/Config.hpp"
+
+#include "Packets/Messages.hpp"
 #include "RemotePlayers.hpp"
 #include "NetworkDiscovery.hpp"
 
@@ -20,16 +24,19 @@ public:
     Client();
     ~Client();
 
+    // void reset();
     bool connectTo(const char *host, uint16_t port);
     void update(float dt);
+    void stop();
+    bool init();
+    bool onConnected();
+    void sendMsg(ClientMsg msg);
 
-    ClientState ConnexionState = ClientState::DISCONNECTED;
-    uint32_t playerId = 0;
-
-    std::vector<RemotePlayer> remotePlayers;
-    std::mutex mtx; // protège remotePlayers
+    ClientState getState() const { return ConnexionState; }
 
 private:
     ENetHost *clientHost;
     ENetPeer *peer;
+    std::mutex mtx;
+    ClientState ConnexionState;
 };

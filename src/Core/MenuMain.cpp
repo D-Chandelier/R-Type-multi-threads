@@ -3,8 +3,8 @@
 MenuMain::MenuMain()
     : play(Config::Get().font),
       join(Config::Get().font),
-      option(Config::Get().font),
-      quit(Config::Get().font)
+      option(Config::Get().font)
+// quit(Config::Get().font)
 {
     float cx = Config::Get().windowSize.x / 2.f;
     float cy = Config::Get().windowSize.y / 10.f;
@@ -21,9 +21,24 @@ MenuMain::MenuMain()
     option.setOrigin(option.getLocalBounds().getCenter());
     option.setPosition({cx, cy * 5});
 
-    quit.setString("Quitter");
-    quit.setOrigin(quit.getLocalBounds().getCenter());
-    quit.setPosition({cx, cy * 9});
+    // Bouton QUIT
+    quit.setTexture("./assets/bt.png");
+    quit.setColor(sf::Color(255, 0, 0, 255));
+    // Taille d'une cellule
+    int cellWidth = quit.getTexture().getSize().x / 2;
+    int cellHeight = quit.getTexture().getSize().y / 7;
+
+    quit.setSpritesheetRects(
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
+    );
+
+    quit.setFont(Config::Get().font);
+    quit.setText("QUITTER", 40, Config::Get().fontColor);
+    quit.setSize({300, 50});
+    quit.setPosition({cx - quit.getSize().x / 2, cy * 9 - quit.getSize().y / 2});
+    quit.onClickCallback([this]()
+                         { this->action = MenuAction::QUIT_APP; });
 
     reset();
 }
@@ -47,7 +62,7 @@ void MenuMain::update(float dt, sf::RenderWindow &w)
     hover(play);
     hover(join);
     hover(option);
-    hover(quit);
+    quit.update(w);
 }
 
 void MenuMain::handleEvent(const sf::Event &e, sf::RenderWindow &w)
@@ -68,8 +83,8 @@ void MenuMain::handleEvent(const sf::Event &e, sf::RenderWindow &w)
         if (option.getGlobalBounds().contains(mp))
             action = MenuAction::GO_TO_OPTION_MENU;
 
-        if (quit.getGlobalBounds().contains(mp))
-            action = MenuAction::QUIT_APP;
+        // if (quit.getGlobalBounds().contains(mp))
+        //     action = MenuAction::QUIT_APP;
     }
 }
 
@@ -78,5 +93,6 @@ void MenuMain::draw(sf::RenderWindow &w)
     w.draw(play);
     w.draw(join);
     w.draw(option);
-    w.draw(quit);
+    quit.draw(w);
+    // w.draw(quit);
 }

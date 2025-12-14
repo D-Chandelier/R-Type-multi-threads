@@ -17,6 +17,7 @@ public:
     Config &operator=(const Config &) = delete;
 
 public:
+
     // ====== PARAMÈTRES MODIFIABLES ======
     std::string title = "R-Type";
     sf::Vector2u windowSize{1280, 800};

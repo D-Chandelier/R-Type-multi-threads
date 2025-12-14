@@ -1,62 +1,82 @@
 ﻿#include "NetworkDiscovery.hpp"
-#include <sstream>
 
-void NetworkDiscovery::broadcastServer(uint16_t gamePort, uint16_t discoveryPort)
+// Côté serveur : broadcast continu
+void NetworkDiscovery::startBroadcast(uint16_t gamePort, uint16_t discoveryPort)
 {
-    sf::UdpSocket socket;
+    stopBroadcast();
+    broadcasting = true;
+    broadcastThread = std::thread([this, gamePort, discoveryPort]()
+                                  {
+        sf::UdpSocket socket;
+        socket.setBlocking(false);
+        sf::IpAddress broadcast = sf::IpAddress::Broadcast;
+        sf::Packet packet;
+        packet << std::string("RTYPE_DISCOVERY:") + std::to_string(gamePort);
 
-    // Créer le packet à envoyer
-    sf::Packet packet;
-    packet << std::string("RTYPE_DISCOVERY:") + std::to_string(gamePort);
+        while (broadcasting)
+        {
+            if (socket.send(packet, broadcast, discoveryPort) != sf::Socket::Status::Done)
+                std::cerr << "[DISCOVERY] Broadcast failed\n";
 
-    sf::IpAddress broadcast = sf::IpAddress::Broadcast;
-
-    if (socket.send(packet, broadcast, discoveryPort) != sf::Socket::Status::Done)
-    {
-        std::cerr << "[DISCOVERY] Broadcast failed\n";
-    }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        } });
 }
 
-std::vector<DiscoveredServer> NetworkDiscovery::scanLAN(uint16_t discoveryPort, unsigned int timeoutMs)
+void NetworkDiscovery::stopBroadcast()
 {
-    std::vector<DiscoveredServer> results;
-    sf::UdpSocket socket;
+    broadcasting = false;
+    if (broadcastThread.joinable())
+        broadcastThread.join();
+}
 
-    // bind sur le port de découverte
-    if (socket.bind(discoveryPort) != sf::Socket::Status::Done)
-    {
-        std::cerr << "[DISCOVERY] Failed to bind UDP socket\n";
-        return results;
-    }
-
-    socket.setBlocking(false);
-
-    sf::Packet packet;
-    std::optional<sf::IpAddress> sender;
-    unsigned short senderPort = 0;
-
-    sf::Clock timer;
-    while (timer.getElapsedTime().asMilliseconds() < static_cast<int>(timeoutMs))
-    {
-        auto status = socket.receive(packet, sender, senderPort);
-        if (status == sf::Socket::Status::Done && sender.has_value())
+// Côté client : écoute continue
+void NetworkDiscovery::startListening(uint16_t discoveryPort)
+{
+    stopListening();
+    listening = true;
+    listenThread = std::thread([this, discoveryPort]()
+                               {
+        sf::UdpSocket socket;
+        if (socket.bind(discoveryPort, sf::IpAddress::Any) != sf::Socket::Status::Done)
         {
-            std::string msg;
-            packet >> msg; // extraire le texte depuis le Packet
-
-            const std::string tag = "RTYPE_DISCOVERY:";
-            if (msg.rfind(tag, 0) == 0)
-            {
-                uint16_t gamePort = static_cast<uint16_t>(std::stoi(msg.substr(tag.size())));
-                results.push_back({sender->toString(), gamePort});
-                // std::cout << "[DISCOVERY] Found server " << sender->toString() << ":" << gamePort << "\n";
-            }
-
-            packet.clear(); // prêt pour la prochaine réception
+            std::cerr << "[DISCOVERY] Failed to bind UDP socket\n";
+            return;
         }
-        sf::sleep(sf::milliseconds(20));
-    }
+        socket.setBlocking(false);
 
-    socket.unbind();
-    return results;
+        while (listening)
+        {
+            sf::Packet packet;
+            std::optional<sf::IpAddress> sender = sf::IpAddress::Any;
+
+            unsigned short senderPort = 0;
+            if (socket.receive(packet, sender, senderPort) == sf::Socket::Status::Done)
+            {
+                std::string msg;
+                packet >> msg;
+                const std::string tag = "RTYPE_DISCOVERY:";
+                if (msg.rfind(tag, 0) == 0)
+                {
+                    uint16_t gamePort = static_cast<uint16_t>(std::stoi(msg.substr(tag.size())));
+                    std::lock_guard<std::mutex> lock(mtx);
+                    discoveredServers.push_back({sender->toString(), gamePort});
+                }
+            }
+            sf::sleep(sf::milliseconds(20));
+        }
+
+        socket.unbind(); });
+}
+
+void NetworkDiscovery::stopListening()
+{
+    listening = false;
+    if (listenThread.joinable())
+        listenThread.join();
+}
+
+std::vector<DiscoveredServer> NetworkDiscovery::getDiscoveredServers()
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    return discoveredServers;
 }

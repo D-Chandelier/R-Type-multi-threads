@@ -5,29 +5,33 @@
 
 #include "../Network/Client.hpp"
 #include "../Network/NetworkDiscovery.hpp"
+#include "../UI/UITextBox.hpp"
+#include "../UI/UIButton.hpp"
 #include "Config.hpp"
 #include "IMenu.hpp"
+
 class MenuServersList : public IMenu
 {
     std::vector<DiscoveredServer> servers;
     std::vector<sf::Text> serverTexts;
     std::mutex serversMutex; // protège l'accès concurrent
+    std::mutex testMutex;    // protège l'accès concurrent
     bool refreshRequested = false;
+    Client &client;
+    NetworkDiscovery &nd;
 
     // Sabler/loader
     sf::VertexArray loader;
     sf::Text loaderText;
     float startAngle = 0.f;
-    sf::Text ipLabel;
-    sf::Text ipField;
 
-    sf::Text portLabel;
-    sf::Text portField;
+    UITextBox tbIp;
+    UITextBox tbPort;
 
     bool ipFocused = false;
     bool portFocused = false;
 
-    sf::Text testButton;
+    UIButton buttonTest;
     sf::Text testStatus;
 
     bool testing = false;       // indique si un test est en cours
@@ -35,7 +39,7 @@ class MenuServersList : public IMenu
     sf::Color lastTestColor = sf::Color::Transparent;
 
 public:
-    MenuServersList(Client &cli);
+    MenuServersList(Client &cli, NetworkDiscovery &nd);
 
     void requestRefresh() { refreshRequested = true; };
     void update(float dt, sf::RenderWindow &w) override;
@@ -44,10 +48,11 @@ public:
     MenuAction getAction() const override { return action; };
     void reset() override;
     void updateLoader();
+    void buttonTest_Click();
 
 private:
-    Client &client;
-    sf::Text title, quit;
+    sf::Text title;
+    UIButton quit;
     MenuAction action = MenuAction::NONE;
     int hoveredIndex = -1;
 };

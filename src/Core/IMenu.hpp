@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include <SFML/Graphics.hpp>
+#include <cmath>
+#include <algorithm>
 #include "Config.hpp"
 
 enum class MenuAction
@@ -10,7 +12,8 @@ enum class MenuAction
     GO_TO_SERVER_LIST,
     GO_TO_OPTION_MENU,
     START_GAME,
-    JOIN_SERVER
+    JOIN_SERVER,
+    RETURN_IN_GAME
 };
 
 struct Star

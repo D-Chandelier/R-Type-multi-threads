@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "Config.hpp"
 #include "IMenu.hpp"
-#include "TextField.hpp"
-
+#include "../UI/UITextBox.hpp"
+#include "../UI/UIButton.hpp"
 class MenuOption : public IMenu
 {
 
@@ -20,14 +20,18 @@ private:
     sf::Text title;
 
     sf::Text portLabel;
-    TextField portField;
-    // sf::Text portField;
-    // sf::RectangleShape portBackground;
-    // bool portFocused = false;
-    // std::string portText;
+    UITextBox tbPort;
+    sf::Text portDesc;
 
-    sf::Text saveButton;
-    sf::Text quit;
+    UIButton quit;
+
+    sf::Texture saveTexture;
+    sf::Sprite saveIcon;
+
+    sf::Texture cocheTexture;
+    sf::Sprite cocheIcon;
+    bool showCocheIcon = false;
+    float saveCheckTimer = 0.f;
 
     MenuAction action = MenuAction::NONE;
 

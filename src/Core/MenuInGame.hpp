@@ -3,10 +3,10 @@
 #include "Config.hpp"
 #include "../UI/UIButton.hpp"
 
-class MenuMain : public IMenu
+class MenuInGame : public IMenu
 {
 public:
-    MenuMain();
+    MenuInGame();
 
     void update(float dt, sf::RenderWindow &w) override;
     void handleEvent(const sf::Event &e, sf::RenderWindow &w) override;
@@ -16,7 +16,7 @@ public:
     MenuAction getAction() const override { return action; };
 
 private:
-    sf::Text play, join, option;
-    UIButton quit;
+    sf::Text sousTitle;
+    UIButton resume, quit;
     MenuAction action = MenuAction::NONE;
 };

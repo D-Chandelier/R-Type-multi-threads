@@ -1,15 +1,12 @@
 ﻿#include "MenuServersList.hpp"
 
-MenuServersList::MenuServersList(Client &cli)
+MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     : client(cli),
+      nd(nd),
       title(Config::Get().font),
-      quit(Config::Get().font),
       loaderText(Config::Get().font),
-      ipLabel(Config::Get().font),
-      ipField(Config::Get().font),
-      portLabel(Config::Get().font),
-      portField(Config::Get().font),
-      testButton(Config::Get().font),
+      tbIp(Config::Get().font),
+      tbPort(Config::Get().font),
       testStatus(Config::Get().font)
 {
     float cx = Config::Get().windowSize.x / 2.f;
@@ -25,52 +22,166 @@ MenuServersList::MenuServersList(Client &cli)
     title.setOrigin(title.getLocalBounds().getCenter());
     title.setPosition({cx, cy * 3});
 
-    quit.setString("Retour");
-    quit.setOrigin(quit.getLocalBounds().getCenter());
-    quit.setPosition({cx, cy * 9});
+    // TextBox IP
+    tbIp.setText(Config::Get().serverIp);
+    tbIp.setLabel("Adresse IP :");
+    tbIp.setLabelSpacing(10.f);
+    tbPort.setMode(UITextBoxMode::LEFT);
+    tbIp.setWidth(320);
+    tbIp.setType(UITextBoxType::IP);
 
-    // Champ IP
-    ipLabel.setString("Adresse IP :");
-    ipLabel.setCharacterSize(24);
-    ipLabel.setFillColor(sf::Color::White);
-    ipLabel.setOrigin(ipLabel.getLocalBounds().getCenter());
-    ipLabel.setPosition({cx / 3, cy * 8});
+    // TextBox Port
+    tbPort.setText(std::to_string(Config::Get().serverPort));
+    tbPort.setLabel("Port :");
+    tbPort.setLabelSpacing(10.f);
+    tbPort.setMode(UITextBoxMode::LEFT);
+    tbPort.setWidth(120);
+    tbPort.setType(UITextBoxType::PORT);
 
-    ipField.setString(Config::Get().serverIp);
-    ipField.setCharacterSize(24);
-    ipField.setFillColor(sf::Color(200, 200, 200));
-    ipField.setOrigin(ipField.getLocalBounds().getCenter());
-    ipField.setPosition({cx / 3 + ipLabel.getLocalBounds().size.x + 40, cy * 8});
-
-    // Champ Port
-    portLabel.setString("Port :");
-    portLabel.setCharacterSize(24);
-    portLabel.setFillColor(sf::Color::White);
-    portLabel.setOrigin(portLabel.getLocalBounds().getCenter());
-    portLabel.setPosition({cx, cy * 8});
-
-    portField.setString(std::to_string(Config::Get().serverPort));
-    portField.setCharacterSize(24);
-    portField.setFillColor(sf::Color(200, 200, 200));
-    portField.setOrigin(portField.getLocalBounds().getCenter());
-    portField.setPosition({cx + portLabel.getLocalBounds().size.x + 40, cy * 8});
+    float spacing = 10.f;
+    float totalWidth = tbIp.getSize().x + spacing + tbPort.getSize().x;
+    float startX = cx - (totalWidth / 2);
+    float y = cy * 8;
+    tbIp.setPosition({startX, y - tbIp.getSize().y / 2});
+    tbPort.setPosition({startX + tbIp.getSize().x + spacing, y - tbPort.getSize().y / 2});
 
     // Bouton TEST
-    testButton.setString("Joindre");
-    testButton.setCharacterSize(28);
-    testButton.setFillColor(Config::Get().fontColor);
-    testButton.setOrigin(testButton.getLocalBounds().getCenter());
-    testButton.setPosition({cx + cx / 3 * 2, cy * 8});
+    buttonTest.setTexture("./assets/bt.png");
+    buttonTest.setColor(sf::Color(128, 255, 128, 255));
+    // Taille d'une cellule
+    int cellWidth = buttonTest.getTexture().getSize().x / 2;
+    int cellHeight = buttonTest.getTexture().getSize().y / 7;
+
+    buttonTest.setSpritesheetRects(
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
+    );
+
+    buttonTest.setFont(Config::Get().font);
+    buttonTest.setText("Try", 24, sf::Color::Black);
+    buttonTest.setSize({100, 28});
+    buttonTest.setPosition({tbPort.getPosition().x + tbPort.getSize().x + 20, y - buttonTest.getSize().y / 2});
+    buttonTest.onClickCallback([this]()
+                               { this->buttonTest_Click(); });
 
     // Label d’état
     testStatus.setCharacterSize(22);
     testStatus.setFillColor(sf::Color::Transparent);
     testStatus.setOrigin(testStatus.getLocalBounds().getCenter());
-    testStatus.setPosition({cx, cy * 8 + 40});
+    testStatus.setPosition({cx, cy * 8 + -40});
+
+    // Bouton QUIT
+    quit.setTexture("./assets/bt.png");
+    quit.setColor(sf::Color(255, 0, 0, 255));
+
+    quit.setSpritesheetRects(
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
+    );
+
+    quit.setFont(Config::Get().font);
+    quit.setText("RETOUR", 40, Config::Get().fontColor);
+    quit.setSize({300, 50});
+    quit.setPosition({cx - quit.getSize().x / 2, cy * 9 - quit.getSize().y / 2});
+    quit.onClickCallback([this]()
+                         { this->action = MenuAction::GO_TO_MAIN_MENU; });
 
     reset();
 }
 
+void MenuServersList::buttonTest_Click()
+{
+    if (!testing)
+    {
+        testing = true;
+        lastTestResult = "Test en cours...";
+        lastTestColor = sf::Color::Yellow;
+        testStatus.setString(lastTestResult);
+
+        std::thread([this]()
+                    {
+            
+            // Résolution IP
+            auto resolved = sf::IpAddress::resolve(tbIp.value);
+            if (!resolved.has_value())
+            {
+                std::lock_guard<std::mutex> lock(testMutex);
+                lastTestResult = "IP invalide";
+                lastTestColor = sf::Color::Red;
+                testing = false;
+                return;
+            }
+
+            sf::IpAddress ip = *resolved;
+            unsigned short port = 0;
+
+            try
+            {
+                port = static_cast<unsigned short>(std::stoi(tbPort.value));
+            }
+            catch (...)
+            {
+                std::lock_guard<std::mutex> lock(testMutex);
+                lastTestResult = "Port invalide";
+                lastTestColor = sf::Color::Red;
+                testing = false;
+                return;
+            }
+
+            bool ok = false;
+
+            // ---- Test réel ENet ----
+            ENetHost *client = enet_host_create(nullptr, 1, 1, 0, 0);
+            if (!client)
+            {
+                std::lock_guard<std::mutex> lock(testMutex);
+                lastTestResult = "Impossible de créer le client ENet";
+                lastTestColor = sf::Color::Red;
+                testing = false;
+                return;
+            }
+
+            ENetAddress address;
+            enet_address_set_host(&address, tbIp.value.c_str());
+            address.port = port;
+
+            ENetPeer *peer = enet_host_connect(client, &address, 1, 0);
+            if (!peer)
+            {
+                std::lock_guard<std::mutex> lock(testMutex);
+                lastTestResult = "Impossible de se connecter au serveur";
+                lastTestColor = sf::Color::Red;
+                enet_host_destroy(client);
+                testing = false;
+                return;
+            }
+
+            ENetEvent event;
+            if (enet_host_service(client, &event, 500) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+            {
+                ok = true;
+                enet_peer_disconnect(peer, 0);
+            }
+
+            enet_host_destroy(client);
+
+            if (ok)
+            {
+                Config::Get().serverIp = tbIp.value.c_str();
+                Config::Get().serverPort = port;
+
+                action = MenuAction::JOIN_SERVER;
+            }
+            else
+            {
+                std::lock_guard<std::mutex> lock(testMutex);
+                lastTestResult = "Serveur non joignable (ENet)";
+                lastTestColor = sf::Color::Red;
+            }                    
+            testing = false; })
+            .detach();
+    }
+}
 void MenuServersList::updateLoader()
 {
     loader.clear();
@@ -101,21 +212,23 @@ void MenuServersList::updateLoader()
 void MenuServersList::reset()
 {
     action = MenuAction::NONE;
-    servers.clear();
-    serverTexts.clear();
+    {
+        std::lock_guard<std::mutex> lock(serversMutex);
+        servers.clear();
+        serverTexts.clear();
+    }
+    tbIp.value = Config::Get().serverIp;
+    tbPort.value = std::to_string(Config::Get().serverPort);
+    lastTestResult = "";
 }
 
 void MenuServersList::update(float dt, sf::RenderWindow &w)
 {
-    if (ipFocused)
-        ipField.setFillColor(Config::Get().hoverColor);
-    else
-        ipField.setFillColor(sf::Color(200, 200, 200));
+    sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
 
-    if (portFocused)
-        portField.setFillColor(Config::Get().hoverColor);
-    else
-        portField.setFillColor(sf::Color(200, 200, 200));
+    tbPort.update(dt);
+    tbIp.update(dt);
+    buttonTest.update(w);
 
     // Rotation
     startAngle += 180.f * dt;
@@ -125,6 +238,7 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
     // Recrée le loader
     updateLoader();
 
+    // Scanner les serveurs toutes les secondes
     static float accumulator = 0.f;
     accumulator += dt;
     if (accumulator > 1.f)
@@ -136,8 +250,7 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
             // Lance le scan dans un thread séparé
             std::thread([this]()
                         {
-                NetworkDiscovery nd;
-                auto newServers = nd.scanLAN(Config::Get().discoveryPort, 1000);
+                auto newServers = nd.getDiscoveredServers();
 
                 std::set<std::pair<std::string,uint16_t>> uniqueSet;
                 std::vector<DiscoveredServer> uniqueServers;
@@ -145,36 +258,49 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
                     if (uniqueSet.insert({s.ip, s.port}).second)
                         uniqueServers.push_back(s);
 
-                // Verrouillage avant modification des vecteurs partagés
-                std::lock_guard<std::mutex> lock(serversMutex);
-                servers = uniqueServers;
+                // Accès sécurisé
+                {
+                    std::lock_guard<std::mutex> lock(serversMutex);
+                    servers = uniqueServers;
 
+                    // Recrée serverTexts dans le thread principal sécurisé
+                    serverTexts.clear();
+                    float cx = Config::Get().windowSize.x / 2.f;
+                    float cy = Config::Get().windowSize.y / 10.f;
+                    float startY = cy * 4;
+                    for (auto &s : servers)
+                    {
+                        sf::Text t(Config::Get().font);
+                        t.setString(s.ip + ":" + std::to_string(s.port));
+                        t.setOrigin({t.getLocalBounds().size.x / 2, 0});
+                        t.setPosition({cx, startY});
+                        startY += cy * .66f;
+                        serverTexts.push_back(t);
+                    }
+                }
                 refreshRequested = false; })
                 .detach(); // détaché pour ne pas bloquer
         }
     }
 
-    // Recrée les sf::Text dans le thread principal pour SFML
+    // Hover et mise à jour couleur serveur
+    hoveredIndex = -1;
     {
         std::lock_guard<std::mutex> lock(serversMutex);
-        serverTexts.clear();
-        float cx = Config::Get().windowSize.x / 2.f;
-        float cy = Config::Get().windowSize.y / 10.f;
-
-        float startY = cy * 4;
-        for (auto &s : servers)
+        for (int i = 0; i < serverTexts.size(); i++)
         {
-            sf::Text t(Config::Get().font);
-            t.setString(s.ip + ":" + std::to_string(s.port));
-            t.setOrigin({t.getLocalBounds().size.x / 2, 0});
-            t.setPosition({cx, startY});
-            startY += cy;
-            serverTexts.push_back(t);
+            if (serverTexts[i].getGlobalBounds().contains(mp))
+            {
+                serverTexts[i].setFillColor(Config::Get().hoverColor);
+                hoveredIndex = i;
+            }
+            else
+            {
+                serverTexts[i].setFillColor(Config::Get().fontColor);
+            }
         }
     }
 
-    // --- Hover ---
-    sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
     auto hover = [&](sf::Text &t)
     {
         if (t.getGlobalBounds().contains(mp))
@@ -182,27 +308,13 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
         else
             t.setFillColor(Config::Get().fontColor);
     };
-    hover(quit);
-    hover(testButton);
 
-    testStatus.setOrigin({testStatus.getLocalBounds().size.x / 2, testStatus.getLocalBounds().size.y / 2});
-
-    // Hover sur les serveurs
-    hoveredIndex = -1;
-    for (int i = 0; i < serverTexts.size(); i++)
-    {
-        if (serverTexts[i].getGlobalBounds().contains(mp))
-        {
-            serverTexts[i].setFillColor(Config::Get().hoverColor);
-            hoveredIndex = i;
-        }
-        else
-        {
-            serverTexts[i].setFillColor(Config::Get().fontColor);
-        }
-    }
+    quit.update(w);
+    // hover(quit);
+    // hover(testButton);
 
     testStatus.setString(lastTestResult);
+    testStatus.setOrigin(testStatus.getLocalBounds().getCenter());
     testStatus.setFillColor(lastTestColor);
 }
 
@@ -212,173 +324,147 @@ void MenuServersList::handleEvent(const sf::Event &e, sf::RenderWindow &w)
 
     if (auto *m = e.getIf<sf::Event::MouseButtonPressed>())
     {
-        ipFocused = ipField.getGlobalBounds().contains(mp);
-        portFocused = portField.getGlobalBounds().contains(mp);
+        // Focus champ port et ip au clic
+        tbPort.checkFocus(mp);
+        tbIp.checkFocus(mp);
 
-        if (quit.getGlobalBounds().contains(mp))
-            action = MenuAction::GO_TO_MAIN_MENU;
+        // if (quit.getGlobalBounds().contains(mp))
+        //     action = MenuAction::GO_TO_MAIN_MENU;
 
+        // Accès sécurisé pour servers
         if (hoveredIndex >= 0)
         {
-            Config::Get().serverIp = servers[hoveredIndex].ip.c_str();
-            Config::Get().serverPort = servers[hoveredIndex].port;
-
-            action = MenuAction::JOIN_SERVER;
-        }
-
-        if (testButton.getGlobalBounds().contains(mp))
-        {
-            if (!testing)
+            std::lock_guard<std::mutex> lock(serversMutex);
+            if (hoveredIndex < servers.size())
             {
-                testing = true;
-                lastTestResult = "Test en cours...";
-                lastTestColor = sf::Color::Yellow;
-                testStatus.setString(lastTestResult);
-
-                std::thread([this]()
-                            {
-                    // Récupération des champs
-                    std::string ipStr = ipField.getString().toAnsiString();
-                    std::string portStr = portField.getString().toAnsiString();
-
-                    // Résolution IP
-                    auto resolved = sf::IpAddress::resolve(ipStr);
-                    if (!resolved.has_value())
-                    {
-                        lastTestResult = "IP invalide";
-                        lastTestColor = sf::Color::Red;
-                        testing = false;
-                        return;
-                    }
-
-                    sf::IpAddress ip = *resolved;
-                    unsigned short port = 0;
-
-                    try
-                    {
-                        port = static_cast<unsigned short>(std::stoi(portStr));
-                    }
-                    catch (...)
-                    {
-                        lastTestResult = "Port invalide";
-                        lastTestColor = sf::Color::Red;
-                        testing = false;
-                        return;
-                    }
-
-                    bool ok = false;
-
-                    // ---- Test réel ENet ----
-                    ENetHost *client = enet_host_create(nullptr, 1, 1, 0, 0);
-                    if (!client)
-                    {
-                        lastTestResult = "Impossible de créer le client ENet";
-                        lastTestColor = sf::Color::Red;
-                        testing = false;
-                        return;
-                    }
-
-                    ENetAddress address;
-                    enet_address_set_host(&address, ipStr.c_str());
-                    address.port = port;
-
-                    ENetPeer *peer = enet_host_connect(client, &address, 1, 0);
-                    if (!peer)
-                    {
-                        lastTestResult = "Impossible de se connecter au serveur";
-                        lastTestColor = sf::Color::Red;
-                        enet_host_destroy(client);
-                        testing = false;
-                        return;
-                    }
-
-                    ENetEvent event;
-                    if (enet_host_service(client, &event, 500) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
-                    {
-                        ok = true;
-                        enet_peer_disconnect(peer, 0);
-                    }
-
-                    enet_host_destroy(client);
-
-                    if (ok)
-                    {
-                        Config::Get().serverIp = ipStr.c_str();
-                        Config::Get().serverPort = port;
-
-                        action = MenuAction::JOIN_SERVER;
-                    }
-                    else
-                    {
-                        lastTestResult = "Serveur non joignable (ENet)";
-                        lastTestColor = sf::Color::Red;
-                    }
-
-                    testing = false; })
-                    .detach();
+                Config::Get().serverIp = servers[hoveredIndex].ip;
+                Config::Get().serverPort = servers[hoveredIndex].port;
+                action = MenuAction::JOIN_SERVER;
             }
         }
+
+        // if (testButton.getGlobalBounds().contains(mp))
+        // {
+        //     if (!testing)
+        //     {
+        //         testing = true;
+        //         lastTestResult = "Test en cours...";
+        //         lastTestColor = sf::Color::Yellow;
+        //         testStatus.setString(lastTestResult);
+
+        //         std::thread([this]()
+        //                     {
+
+        //             // Résolution IP
+        //             auto resolved = sf::IpAddress::resolve(tbIp.value);
+        //             if (!resolved.has_value())
+        //             {
+        //                 std::lock_guard<std::mutex> lock(testMutex);
+        //                 lastTestResult = "IP invalide";
+        //                 lastTestColor = sf::Color::Red;
+        //                 testing = false;
+        //                 return;
+        //             }
+
+        //             sf::IpAddress ip = *resolved;
+        //             unsigned short port = 0;
+
+        //             try
+        //             {
+        //                 port = static_cast<unsigned short>(std::stoi(tbPort.value));
+        //             }
+        //             catch (...)
+        //             {
+        //                 std::lock_guard<std::mutex> lock(testMutex);
+        //                 lastTestResult = "Port invalide";
+        //                 lastTestColor = sf::Color::Red;
+        //                 testing = false;
+        //                 return;
+        //             }
+
+        //             bool ok = false;
+
+        //             // ---- Test réel ENet ----
+        //             ENetHost *client = enet_host_create(nullptr, 1, 1, 0, 0);
+        //             if (!client)
+        //             {
+        //                 std::lock_guard<std::mutex> lock(testMutex);
+        //                 lastTestResult = "Impossible de créer le client ENet";
+        //                 lastTestColor = sf::Color::Red;
+        //                 testing = false;
+        //                 return;
+        //             }
+
+        //             ENetAddress address;
+        //             enet_address_set_host(&address, tbIp.value.c_str());
+        //             address.port = port;
+
+        //             ENetPeer *peer = enet_host_connect(client, &address, 1, 0);
+        //             if (!peer)
+        //             {
+        //                 std::lock_guard<std::mutex> lock(testMutex);
+        //                 lastTestResult = "Impossible de se connecter au serveur";
+        //                 lastTestColor = sf::Color::Red;
+        //                 enet_host_destroy(client);
+        //                 testing = false;
+        //                 return;
+        //             }
+
+        //             ENetEvent event;
+        //             if (enet_host_service(client, &event, 500) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
+        //             {
+        //                 ok = true;
+        //                 enet_peer_disconnect(peer, 0);
+        //             }
+
+        //             enet_host_destroy(client);
+
+        //             if (ok)
+        //             {
+        //                 Config::Get().serverIp = tbIp.value.c_str();
+        //                 Config::Get().serverPort = port;
+
+        //                 action = MenuAction::JOIN_SERVER;
+        //             }
+        //             else
+        //             {
+        //                 std::lock_guard<std::mutex> lock(testMutex);
+        //                 lastTestResult = "Serveur non joignable (ENet)";
+        //                 lastTestColor = sf::Color::Red;
+        //             }
+        //             testing = false; })
+        //             .detach();
+        //     }
+        // }
     }
 
-    // Saisie clavier
-    if (auto *t = e.getIf<sf::Event::TextEntered>())
-    {
-        if (ipFocused)
-        {
-            char c = t->unicode;
-            if ((c >= '0' && c <= '9') || c == '.')
-                ipField.setString(ipField.getString() + c);
-
-            if (c == 8 && !ipField.getString().isEmpty()) // Backspace
-                ipField.setString(ipField.getString().substring(0, ipField.getString().getSize() - 1));
-        }
-
-        if (portFocused)
-        {
-            char c = t->unicode;
-            if (c >= '0' && c <= '9')
-                portField.setString(portField.getString() + c);
-
-            if (c == 8 && !portField.getString().isEmpty())
-                portField.setString(portField.getString().substring(0, portField.getString().getSize() - 1));
-        }
-    }
-
-    // Entrée = valider IP/Port manuels
-    if (auto *k = e.getIf<sf::Event::KeyPressed>())
-    {
-        if (k->code == sf::Keyboard::Key::Enter)
-        {
-            Config::Get().serverIp = ipField.getString();
-            Config::Get().serverPort = static_cast<uint16_t>(std::atoi(portField.getString().toAnsiString().c_str()));
-            action = MenuAction::JOIN_SERVER;
-        }
-    }
+    tbPort.handleEvent(e);
+    tbIp.handleEvent(e);
 }
 
 void MenuServersList::draw(sf::RenderWindow &w)
 {
     w.draw(title);
-    if (serverTexts.empty())
     {
-        // Affiche loader
-        w.draw(loader);
-        w.draw(loaderText);
+        std::lock_guard<std::mutex> lock(serversMutex);
+        if (serverTexts.empty())
+        {
+            w.draw(loader);
+            w.draw(loaderText);
+        }
+        else
+        {
+            for (auto &t : serverTexts)
+                w.draw(t);
+        }
     }
-    else
-    {
-        for (auto &t : serverTexts)
-            w.draw(t);
-    }
 
-    w.draw(ipLabel);
-    w.draw(ipField);
+    tbIp.draw(w);
+    tbPort.draw(w);
 
-    w.draw(portLabel);
-    w.draw(portField);
-
-    w.draw(testButton);
+    buttonTest.draw(w);
+    // w.draw(testButton);
     w.draw(testStatus);
-
-    w.draw(quit);
+    quit.draw(w);
+    // w.draw(quit);
 }
