@@ -5,24 +5,56 @@ std::atomic<bool> running{true};
 // Threads réseau
 void runServer(Server *server)
 {
-    using namespace std::chrono_literals;
+    using clock = std::chrono::steady_clock;
+    auto last = clock::now();
 
     while (running)
     {
-        server->update(Config::Get().frameRate);
-        std::this_thread::sleep_for(16ms);
+        auto now = clock::now();
+        float dt = std::chrono::duration<float>(now - last).count();
+        last = now;
+
+        server->update(dt);
+
+        // petit sleep pour ne pas saturer le CPU
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
 void runClient(Client *client)
 {
-    using namespace std::chrono_literals;
+    using clock = std::chrono::steady_clock;
+    auto last = clock::now();
 
     while (running)
     {
-        client->update(Config::Get().frameRate);
-        std::this_thread::sleep_for(16ms);
+        auto now = clock::now();
+        float dt = std::chrono::duration<float>(now - last).count();
+        last = now;
+
+        client->update(dt);
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long>(Config::Get().frameRate)));
     }
+}
+
+void Game::stopThreads()
+{
+    // Demande l'arrêt aux threads
+    running = false;
+
+    // Attend la fin des threads réseau AVANT de détruire quoi que ce soit
+    if (serverThread.joinable())
+        serverThread.join();
+    if (clientThread.joinable())
+        clientThread.join();
+
+    // Maintenant, les threads sont terminés — on peut détruire les hosts en toute sécurité
+    server.stop();
+    client.stop();
+
+    // Réinitialiser discovery (UDP)
+    discoveryClient.stopBroadcast();
+    discoveryClient.stopListening();
 }
 
 Game::Game()
@@ -31,7 +63,8 @@ Game::Game()
       menuMain(),
       menuServers(client, discoveryClient),
       menuOption(),
-      menuInGame()
+      menuInGame(),
+      menuBackground(Config::Get().font)
 {
     currentMenu = &menuMain;
 }
@@ -39,15 +72,13 @@ Game::Game()
 void Game::run()
 {
     sf::Clock clock;
-    Background bg(Config::Get().font);
+    // Background bg(Config::Get().font);
 
     while (window.isOpen())
     {
         float dt = clock.restart().asSeconds();
 
-        // -------------------------------------
-        // 1. EVENTS
-        // -------------------------------------
+        // 1. Gestion des events (juste fermeture, menus...)
         while (auto event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -84,59 +115,69 @@ void Game::run()
                 currentMenu->handleEvent(*event, window);
         }
 
-        // -------------------------------------
-        // 2. UPDATE
-        // -------------------------------------
-        if (currentMenu && state != GameState::IN_GAME)
+        // 2. Calcul mouvement joueur chaque frame
+        if (state == GameState::IN_GAME)
         {
-            currentMenu->update(dt, window);
-            handleMenuAction(); // <-- important
+            client.localPlayer.velocity = {0.f, 0.f};
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
+                client.localPlayer.velocity.x -= Config::Get().speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+                client.localPlayer.velocity.x += Config::Get().speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
+                client.localPlayer.velocity.y -= Config::Get().speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
+                client.localPlayer.velocity.y += Config::Get().speed;
+
+            // normaliser la diagonale si besoin
+            if (client.localPlayer.velocity.x != 0.f && client.localPlayer.velocity.y != 0.f)
+                client.localPlayer.velocity /= std::sqrt(2.f);
+
+            if (client.localPlayer.velocity != sf::Vector2f(0, 0))
+            {
+                client.localPlayer.position += client.localPlayer.velocity * dt;
+                if (client.localPlayer.position.x < 0)
+                    client.localPlayer.position.x = 0;
+                if (client.localPlayer.position.x > Config::Get().windowSize.x)
+                    client.localPlayer.position.x = Config::Get().windowSize.x;
+                if (client.localPlayer.position.y < 0)
+                    client.localPlayer.position.y = 0;
+                if (client.localPlayer.position.y > Config::Get().windowSize.y)
+                    client.localPlayer.position.y = Config::Get().windowSize.y;
+                client.localPlayer.sendPosition(client);
+            }
         }
-        else if (state == GameState::IN_GAME)
-        {
-            updateGameplay(dt); // <-- ta future logique in-game
-        }
-        // else if (state == GameState::MENU_IN_GAME)
-        // {
-        // }
-
-        bg.update(dt);
-
-        // -------------------------------------
-        // 3. DRAW
-        // -------------------------------------
-        window.clear(Config::Get().backgroundColor);
-
-        if (state != GameState::IN_GAME)
-        {
-            bg.draw(window);
-            currentMenu->draw(window);
-        }
-        else
-            drawGameplay(window);
-
-        window.display();
+        update(dt);
+        draw(dt);
     }
 }
 
-void Game::stopThreads()
+void Game::update(float dt)
 {
-    // Demande l'arrêt aux threads
-    running = false;
+    if (currentMenu && state != GameState::IN_GAME)
+    {
+        currentMenu->update(dt, window);
+        menuBackground.update(dt);
+        handleMenuAction(); // <-- important
+    }
+    else if (state == GameState::IN_GAME)
+    {
+        updateGameplay(dt); // <-- ta future logique in-game
+    }
+}
 
-    // Attend la fin des threads réseau AVANT de détruire quoi que ce soit
-    if (serverThread.joinable())
-        serverThread.join();
-    if (clientThread.joinable())
-        clientThread.join();
+void Game::draw(float dt)
+{
+    window.clear(Config::Get().backgroundColor);
 
-    // Maintenant, les threads sont terminés — on peut détruire les hosts en toute sécurité
-    server.stop();
-    client.stop();
+    if (state != GameState::IN_GAME)
+    {
+        menuBackground.draw(window);
+        currentMenu->draw(window);
+    }
+    else
+        drawGameplay(window);
 
-    // Réinitialiser discovery (UDP)
-    discoveryClient.stopBroadcast();
-    discoveryClient.stopListening();
+    window.display();
 }
 
 void Game::handleMenuAction()
@@ -176,19 +217,35 @@ void Game::handleMenuAction()
         Config::Get().isServer = true;
         running = true;
 
-        // Démarrage serveur
-        server.start(Config::Get().serverPort);
+        // --- Démarrage serveur ---
+        if (!server.start(Config::Get().serverPort))
+        {
+            std::cerr << "[Game] Impossible de démarrer le serveur.\n";
+            break;
+        }
         serverThread = std::thread(runServer, &server);
-        discoveryClient.startBroadcast(Config::Get().serverPort, Config::Get().discoveryPort);
 
-        // Connexion client local
-        client.connectTo("127.0.0.1", Config::Get().serverPort);
+        // Petit délai pour s'assurer que le serveur est prêt avant connexion client
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+        // --- Démarrage client local ---
+        if (!client.init())
+        {
+            std::cerr << "[Game] Impossible d'initialiser le client.\n";
+            break;
+        }
+
+        if (!client.connectTo("127.0.0.1", Config::Get().serverPort))
+        {
+            std::cerr << "[Game] Impossible de connecter le client.\n";
+            break;
+        }
+
         clientThread = std::thread(runClient, &client);
 
-        // IMPORTANT : on ne passe PAS encore en gameplay logique
-        state = GameState::IN_GAME;
+        discoveryClient.startBroadcast(Config::Get().serverPort, Config::Get().discoveryPort);
 
-        // Dès que la connexion est établie, le client enverra REQUEST_NEW_GAME
+        state = GameState::IN_GAME;
         break;
 
     case MenuAction::JOIN_SERVER:
@@ -218,12 +275,20 @@ void Game::handleMenuAction()
     }
 }
 
-void Game::updateGameplay(float dt)
-{
-    // Todo: Logique R-Type in Game
-}
+void Game::updateGameplay(float dt) {}
 
 void Game::drawGameplay(sf::RenderWindow &w)
 {
-    // ToDo: Draw R-Type in game
+    int cellWidth = client.localPlayer.sprite.getTexture().getSize().x / 5;
+    int cellHeight = client.localPlayer.sprite.getTexture().getSize().y / 5;
+
+    for (const auto &[id, p] : client.allPlayers)
+    {
+        sf::Sprite tempSprite(client.localPlayer.texture);
+        tempSprite.setTextureRect(sf::IntRect(
+            {2 * cellWidth, id * cellHeight}, {cellWidth, cellHeight}));
+        tempSprite.setPosition({p.x, p.y});
+        tempSprite.setOrigin(client.localPlayer.sprite.getOrigin()); // centrer
+        w.draw(tempSprite);
+    }
 }

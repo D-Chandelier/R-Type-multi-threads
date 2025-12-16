@@ -47,6 +47,12 @@ public:
         normalRect = {{0, 0}, {(int)texture.getSize().x, (int)texture.getSize().y}};
         sprite.setTextureRect(normalRect);
     }
+    void setTexture(sf::Texture texture)
+    {
+        sprite.setTexture(texture);
+        normalRect = {{0, 0}, {(int)texture.getSize().x, (int)texture.getSize().y}};
+        sprite.setTextureRect(normalRect);
+    }
 
     sf::Texture &getTexture() { return texture; }
 

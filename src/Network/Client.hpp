@@ -8,7 +8,9 @@
 #include "../Core/Config.hpp"
 
 #include "Packets/Messages.hpp"
-#include "RemotePlayers.hpp"
+
+#include "../Entities/RemotePlayers.hpp"
+#include "../Entities/Player.hpp"
 #include "NetworkDiscovery.hpp"
 
 enum class ClientState
@@ -34,9 +36,13 @@ public:
 
     ClientState getState() const { return ConnexionState; }
 
-private:
     ENetHost *clientHost;
     ENetPeer *peer;
+
+    Player localPlayer;
+    std::map<int, RemotePlayer> allPlayers;
+
+private:
     std::mutex mtx;
     ClientState ConnexionState;
 };

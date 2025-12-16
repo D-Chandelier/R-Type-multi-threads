@@ -12,7 +12,7 @@
 #include "../Core/Config.hpp"
 
 #include "Packets/Messages.hpp"
-#include "RemotePlayers.hpp"
+#include "../Entities/RemotePlayers.hpp"
 #include "NetworkDiscovery.hpp"
 
 class Server
@@ -24,13 +24,16 @@ public:
     bool start(uint16_t port);
     void stop();
     void update(float dt);
-    void onClientMessage(ENetPeer *peer, ClientMsg msg);
     void broadcastPositions(); // envoie positions à tous les clients
 
-    std::vector<RemotePlayer> getPlayers(); // accès thread-safe
+    std::map<int, RemotePlayer> getPlayers(); // accès thread-safe
+    int findFreePlayerId();
 
 private:
     ENetHost *host = nullptr;
     std::mutex mtx; // protège players
-    std::vector<RemotePlayer> players;
+    std::map<int, RemotePlayer> allPlayers;
+
+    float positionAccumulator = 0.0f;                         // temps écoulé depuis dernier broadcast
+    const float SERVER_TICK = 1.0f * Config::Get().frameRate; // 60 Hz
 };

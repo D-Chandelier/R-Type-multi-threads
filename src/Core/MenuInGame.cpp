@@ -59,28 +59,7 @@ void MenuInGame::update(float dt, sf::RenderWindow &w)
     quit.update(w);
 }
 
-void MenuInGame::handleEvent(const sf::Event &e, sf::RenderWindow &w)
-{
-    // if (auto *m = e.getIf<sf::Event::MouseButtonPressed>())
-    // {
-    //     if (m->button != sf::Mouse::Button::Left)
-    //         return;
-
-    //     sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
-
-    //     if (play.getGlobalBounds().contains(mp))
-    //         action = MenuAction::START_GAME;
-
-    //     if (join.getGlobalBounds().contains(mp))
-    //         action = MenuAction::GO_TO_SERVER_LIST;
-
-    //     if (option.getGlobalBounds().contains(mp))
-    //         action = MenuAction::GO_TO_OPTION_MENU;
-
-    //     // if (quit.getGlobalBounds().contains(mp))
-    //     //     action = MenuAction::QUIT_APP;
-    // }
-}
+void MenuInGame::handleEvent(const sf::Event &e, sf::RenderWindow &w) {}
 
 void MenuInGame::draw(sf::RenderWindow &w)
 {

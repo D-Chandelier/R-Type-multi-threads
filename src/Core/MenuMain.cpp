@@ -1,38 +1,56 @@
 ﻿#include "MenuMain.hpp"
 
 MenuMain::MenuMain()
-    : play(Config::Get().font),
-      join(Config::Get().font),
-      option(Config::Get().font)
 // quit(Config::Get().font)
 {
     float cx = Config::Get().windowSize.x / 2.f;
     float cy = Config::Get().windowSize.y / 10.f;
 
-    play.setString("Jouer (serveur)");
-    play.setOrigin(play.getLocalBounds().getCenter());
-    play.setPosition({cx, cy * 3});
+    sf::Texture texture;
+    if (!texture.loadFromFile("./assets/bt.png"))
+        std::cout << "Err load ./assets/bt.png\n";
+    int cellWidth = texture.getSize().x / 2;
+    int cellHeight = texture.getSize().y / 7;
+    sf::IntRect normal = {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}};
+    sf::IntRect hover = {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}};
 
-    join.setString("Rejoindre un serveur");
-    join.setOrigin(join.getLocalBounds().getCenter());
-    join.setPosition({cx, cy * 4});
+    // Bouton PLAY
+    play.setTexture("./assets/bt.png");
+    play.setColor(sf::Color(128, 255, 128, 0));
+    play.setSpritesheetRects(normal, hover);
+    play.setFont(Config::Get().font);
+    play.setText("PLAY", 40, Config::Get().fontColor);
+    play.setSize({400, 50});
+    play.setPosition({cx - play.getSize().x / 2, cy * 3 - play.getSize().y / 2});
+    play.onClickCallback([this]()
+                         { this->action = MenuAction::START_GAME; });
 
-    option.setString("Options");
-    option.setOrigin(option.getLocalBounds().getCenter());
-    option.setPosition({cx, cy * 5});
+    // Bouton JOIN SERVER
+    join.setTexture("./assets/bt.png");
+    join.setColor(sf::Color(128, 255, 128, 0));
+    join.setSpritesheetRects(normal, hover);
+    join.setFont(Config::Get().font);
+    join.setText("JOIN SERVER", 40, Config::Get().fontColor);
+    join.setSize({400, 50});
+    join.setPosition({cx - join.getSize().x / 2, cy * 4 - join.getSize().y / 2});
+    join.onClickCallback([this]()
+                         { this->action = MenuAction::GO_TO_SERVER_LIST; });
+
+    // Bouton JOIN SERVER
+    option.setTexture("./assets/bt.png");
+    option.setColor(sf::Color(128, 255, 128, 0));
+    option.setSpritesheetRects(normal, hover);
+    option.setFont(Config::Get().font);
+    option.setText("OPTIONS", 40, Config::Get().fontColor);
+    option.setSize({400, 50});
+    option.setPosition({cx - option.getSize().x / 2, cy * 5 - option.getSize().y / 2});
+    option.onClickCallback([this]()
+                           { this->action = MenuAction::GO_TO_OPTION_MENU; });
 
     // Bouton QUIT
     quit.setTexture("./assets/bt.png");
-    quit.setColor(sf::Color(255, 0, 0, 255));
-    // Taille d'une cellule
-    int cellWidth = quit.getTexture().getSize().x / 2;
-    int cellHeight = quit.getTexture().getSize().y / 7;
-
-    quit.setSpritesheetRects(
-        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
-        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
-    );
-
+    quit.setColor(sf::Color(255, 64, 64, 64));
+    quit.setSpritesheetRects(normal, hover);
     quit.setFont(Config::Get().font);
     quit.setText("QUITTER", 40, Config::Get().fontColor);
     quit.setSize({300, 50});
@@ -52,47 +70,18 @@ void MenuMain::update(float dt, sf::RenderWindow &w)
 {
     // --- Hover ---
     sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
-    auto hover = [&](sf::Text &t)
-    {
-        if (t.getGlobalBounds().contains(mp))
-            t.setFillColor(sf::Color::Yellow);
-        else
-            t.setFillColor(Config::Get().fontColor);
-    };
-    hover(play);
-    hover(join);
-    hover(option);
+    play.update(w);
+    join.update(w);
+    option.update(w);
     quit.update(w);
 }
 
-void MenuMain::handleEvent(const sf::Event &e, sf::RenderWindow &w)
-{
-    if (auto *m = e.getIf<sf::Event::MouseButtonPressed>())
-    {
-        if (m->button != sf::Mouse::Button::Left)
-            return;
-
-        sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
-
-        if (play.getGlobalBounds().contains(mp))
-            action = MenuAction::START_GAME;
-
-        if (join.getGlobalBounds().contains(mp))
-            action = MenuAction::GO_TO_SERVER_LIST;
-
-        if (option.getGlobalBounds().contains(mp))
-            action = MenuAction::GO_TO_OPTION_MENU;
-
-        // if (quit.getGlobalBounds().contains(mp))
-        //     action = MenuAction::QUIT_APP;
-    }
-}
+void MenuMain::handleEvent(const sf::Event &e, sf::RenderWindow &w) {}
 
 void MenuMain::draw(sf::RenderWindow &w)
 {
-    w.draw(play);
-    w.draw(join);
-    w.draw(option);
+    play.draw(w);
+    join.draw(w);
+    option.draw(w);
     quit.draw(w);
-    // w.draw(quit);
 }

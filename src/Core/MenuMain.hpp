@@ -16,7 +16,7 @@ public:
     MenuAction getAction() const override { return action; };
 
 private:
-    sf::Text play, join, option;
-    UIButton quit;
+    // sf::Text play, join, option;
+    UIButton play, join, option, quit;
     MenuAction action = MenuAction::NONE;
 };

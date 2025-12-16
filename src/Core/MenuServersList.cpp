@@ -72,7 +72,7 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
 
     // Bouton QUIT
     quit.setTexture("./assets/bt.png");
-    quit.setColor(sf::Color(255, 0, 0, 255));
+    quit.setColor(sf::Color(255, 64, 64, 64));
 
     quit.setSpritesheetRects(
         {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal

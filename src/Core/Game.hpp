@@ -12,6 +12,9 @@
 #include "../Network/Server.hpp"
 #include "../Network/NetworkDiscovery.hpp"
 
+#include "../Entities/EntityManager.hpp"
+#include "../Entities/Player.hpp"
+
 class Game
 {
 public:
@@ -19,8 +22,12 @@ public:
     void run();
     void stopThreads();
     void drawGameplay(sf::RenderWindow &w);
+    void update(float dt);
+    void draw(float dt);
     void handleMenuAction();
     void updateGameplay(float dt);
+
+    // Player player;
 
 private:
     sf::RenderWindow window;
@@ -30,6 +37,7 @@ private:
     MenuOption menuOption;
     MenuInGame menuInGame;
     IMenu *currentMenu = nullptr;
+    Background menuBackground;
 
     Server server;
     Client client;
@@ -39,4 +47,6 @@ private:
     NetworkDiscovery discoveryClient;
 
     GameState state = GameState::MENU_MAIN;
+
+    EntityManager entityManager;
 };

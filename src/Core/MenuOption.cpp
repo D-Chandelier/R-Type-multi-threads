@@ -55,7 +55,7 @@ MenuOption::MenuOption()
 
     // Bouton QUIT
     quit.setTexture("./assets/bt.png");
-    quit.setColor(sf::Color(255, 0, 0, 255));
+    quit.setColor(sf::Color(255, 64, 64, 64));
     // Taille d'une cellule
     int cellWidth = quit.getTexture().getSize().x / 2;
     int cellHeight = quit.getTexture().getSize().y / 7;
