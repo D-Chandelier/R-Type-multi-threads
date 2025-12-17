@@ -1,5 +1,4 @@
 ﻿#include "Client.hpp"
-#include <unordered_set>
 
 Client::Client()
     : clientHost(nullptr),
@@ -54,125 +53,117 @@ void Client::stop()
     }
 }
 
-void Client::update(float dt)
+void Client::eventReceivePlayersPositions(ENetEvent event)
 {
-    std::lock_guard<std::mutex> lock(mtx);
-
-    if (!clientHost)
+    if (event.packet->dataLength != sizeof(ServerPositionPacket))
         return;
 
+    auto *p = reinterpret_cast<ServerPositionPacket *>(event.packet->data);
+
+    std::unordered_set<int> seenIds;
+    for (int i = 0; i < p->playerCount; i++)
+    {
+        seenIds.insert(p->players[i].id);
+        allPlayers[p->players[i].id].id = p->players[i].id;
+        allPlayers[p->players[i].id].x = p->players[i].x;
+        allPlayers[p->players[i].id].y = p->players[i].y;
+    }
+
+    // Supprimer les joueurs qui ne sont plus dans le snapshot
+    for (auto it = allPlayers.begin(); it != allPlayers.end();)
+    {
+        if (seenIds.find(it->first) == seenIds.end())
+            it = allPlayers.erase(it);
+        else
+            ++it;
+    }
+}
+
+void Client::eventReceiveId(ENetEvent event)
+{
+    if (event.packet->dataLength != sizeof(ServerAssignIdPacket))
+        return;
+
+    auto *p = reinterpret_cast<ServerAssignIdPacket *>(event.packet->data);
+
+    allPlayers[p->id].id = p->id;
+    localPlayer.id = p->id;
+    localPlayer.position = {Config::Get().windowSize.x / 20.f, Config::Get().windowSize.y / (static_cast<float>(Config::Get().maxPlayers) + 1.f) * (static_cast<float>(p->id) + 1.f)};
+    localPlayer.sendPosition(*this);
+    ConnexionState = ClientState::CONNECTED;
+
+    std::cout << "[Client] received(ASSIGN_ID): [" << localPlayer.id << "] \n";
+}
+
+void Client::handleTypeConnect(ENetEvent event)
+{
+    std::cout << "[Client] connected\n";
+    peer = event.peer;
+    ConnexionState = ClientState::CONNECTING;
+
+    PacketHeader p;
+    p.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
+
+    if (Config::Get().isServer)
+        p.code = static_cast<uint8_t>(ClientMsg::REQUEST_NEW_GAME);
+    else
+        p.code = static_cast<uint8_t>(ClientMsg::REQUEST_JOIN_GAME);
+
+    ENetPacket *packet = enet_packet_create(
+        &p,
+        sizeof(PacketHeader),
+        ENET_PACKET_FLAG_RELIABLE);
+
+    enet_peer_send(peer, 0, packet);
+}
+
+void Client::handleTypeReceive(ENetEvent event)
+{
+    if (event.packet)
+    {
+        PacketHeader *h = (PacketHeader *)event.packet->data;
+
+        if (h->type == static_cast<uint8_t>(PacketType::SERVER_MSG))
+        {
+            switch (h->code)
+            {
+            case static_cast<uint8_t>(ServerMsg::ASSIGN_ID):
+                eventReceiveId(event);
+
+            case static_cast<uint8_t>(ServerMsg::PLAYER_POSITION):
+                eventReceivePlayersPositions(event);
+
+            default:
+                return;
+            }
+        }
+    }
+}
+
+void Client::handleTypeDisconnect(ENetEvent event)
+{
+    std::cout << "[Client] disconnected\n";
+    ConnexionState = ClientState::DISCONNECTED;
+    peer = nullptr;
+}
+
+void Client::handleEnetService()
+{
     ENetEvent event;
     while (enet_host_service(clientHost, &event, 0) > 0)
     {
         switch (event.type)
         {
         case ENET_EVENT_TYPE_CONNECT:
-        {
-            std::cout << "[Client] connected\n";
-            peer = event.peer;
-            ConnexionState = ClientState::CONNECTING;
-
-            if (Config::Get().isServer)
-                sendMsg(ClientMsg::REQUEST_NEW_GAME);
-            else
-                sendMsg(ClientMsg::REQUEST_JOIN_GAME);
-        };
-        break;
+            handleTypeConnect(event);
+            break;
         case ENET_EVENT_TYPE_RECEIVE:
-
-            if (event.packet)
-            {
-                PacketHeader *h = (PacketHeader *)event.packet->data;
-
-                if (h->type == static_cast<uint8_t>(PacketType::SERVER_MSG))
-                {
-                    if (h->code == static_cast<uint8_t>(ServerMsg::ASSIGN_ID))
-                    {
-                        if (event.packet->dataLength != sizeof(ServerAssignIdPacket))
-                            break;
-                        auto *p = reinterpret_cast<ServerAssignIdPacket *>(event.packet->data);
-                        allPlayers[p->id].id = p->id;
-                        localPlayer.id = p->id;
-                        localPlayer.position = {0.f, 0.f};
-                        std::cout << "[Client] received(ASSIGN_ID): [" << localPlayer.id << "] \n";
-                        ConnexionState = ClientState::CONNECTED;
-                    }
-
-                    if (h->code == static_cast<uint8_t>(ServerMsg::PLAYER_POSITION))
-                    {
-                        // std::cout << "[Client received] ServerPositionPacket\n";
-                        if (event.packet->dataLength != sizeof(ServerPositionPacket))
-                            break;
-
-                        auto *p = reinterpret_cast<ServerPositionPacket *>(event.packet->data);
-
-                        std::unordered_set<int> seenIds;
-                        for (int i = 0; i < p->playerCount; i++)
-                        {
-                            seenIds.insert(p->players[i].id);
-                            allPlayers[p->players[i].id].id = p->players[i].id;
-                            allPlayers[p->players[i].id].x = p->players[i].x;
-                            allPlayers[p->players[i].id].y = p->players[i].y;
-                        }
-
-                        // Supprimer les joueurs qui ne sont plus dans le snapshot
-                        for (auto it = allPlayers.begin(); it != allPlayers.end();)
-                        {
-                            if (seenIds.find(it->first) == seenIds.end())
-                                it = allPlayers.erase(it);
-                            else
-                                ++it;
-                        }
-
-                        // allPlayers.emplace(
-                        //     i,
-                        //     RemotePlayer{
-                        //         p->players[i].id,
-                        //         p->players[i].x,
-                        //         p->players[i].y,
-                        //         nullptr});
-
-                        // if (p->players[i].id == localPlayer.id)
-                        // {
-                        //     localPlayer.position.x = static_cast<float>(p->players[i].x);
-                        //     localPlayer.position.y = static_cast<float>(p->players[i].y);
-                        // }
-                        // else
-                        // {
-
-                        // auto it = allPlayers.find(p->players[i].id);
-                        // if (it == allPlayers.end())
-                        // {
-                        //     RemotePlayer rp;
-                        //     rp.id = p->players[i].id;
-                        //     rp.x = p->players[i].x;
-                        //     rp.y = p->players[i].y;
-                        //     rp.peer = nullptr; // ou peer connu si c’est le connect
-                        //     allPlayers[p->players[i].id] = rp;
-                        // }
-                        // else
-                        // {
-                        //     it->second.id = p->players[i].id;
-                        //     it->second.x = p->players[i].x;
-                        //     it->second.y = p->players[i].y;
-                        // }
-                        // allPlayers[p->id].x = p->x;
-                        // allPlayers[p->id].y = p->y;
-                        // allPlayers[p->id].id = p->id;
-                        // }
-                        // }
-                    }
-                }
-
-                enet_packet_destroy(event.packet);
-            }
-
+            handleTypeReceive(event);
+            enet_packet_destroy(event.packet);
             break;
 
         case ENET_EVENT_TYPE_DISCONNECT:
-            std::cout << "[Client] disconnected\n";
-            ConnexionState = ClientState::DISCONNECTED;
-            peer = nullptr;
+            handleTypeDisconnect(event);
             break;
 
         default:
@@ -181,19 +172,12 @@ void Client::update(float dt)
     }
 }
 
-void Client::sendMsg(ClientMsg msg)
+void Client::update(float dt)
 {
-    if (!peer)
+    std::lock_guard<std::mutex> lock(mtx);
+
+    if (!clientHost)
         return;
 
-    PacketHeader p;
-    p.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
-    p.code = static_cast<uint8_t>(msg);
-
-    ENetPacket *packet = enet_packet_create(
-        &p,
-        sizeof(PacketHeader),
-        ENET_PACKET_FLAG_RELIABLE);
-
-    enet_peer_send(peer, 0, packet);
+    handleEnetService();
 }

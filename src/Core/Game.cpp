@@ -284,11 +284,12 @@ void Game::drawGameplay(sf::RenderWindow &w)
 
     for (const auto &[id, p] : client.allPlayers)
     {
-        sf::Sprite tempSprite(client.localPlayer.texture);
+        sf::Sprite tempSprite(Config::Get().texture);
         tempSprite.setTextureRect(sf::IntRect(
             {2 * cellWidth, id * cellHeight}, {cellWidth, cellHeight}));
+        tempSprite.setScale({2.f, 2.f});
+        tempSprite.setOrigin(tempSprite.getLocalBounds().getCenter());
         tempSprite.setPosition({p.x, p.y});
-        tempSprite.setOrigin(client.localPlayer.sprite.getOrigin()); // centrer
         w.draw(tempSprite);
     }
 }

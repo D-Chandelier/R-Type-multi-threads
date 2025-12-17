@@ -32,12 +32,94 @@ void Server::stop()
         host = nullptr;
     }
 }
-void Server::update(float dt)
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    if (!host)
-        return;
 
+void Server::sendNewId(ENetEvent event)
+{
+    int newId = findFreePlayerId();
+
+    ServerAssignIdPacket p;
+    p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
+    p.header.code = static_cast<uint8_t>(ServerMsg::ASSIGN_ID);
+
+    if (newId != 100)
+    {
+        allPlayers[newId].id = newId;
+        allPlayers[newId].x = 0.f;
+        allPlayers[newId].y = 0.f;
+        allPlayers[newId].peer = event.peer;
+    }
+    else
+    {
+        p.id = 100;
+        std::cout << "[SERVER] demande de connexion.\nServer Full (send SPECTATOR ID)\nEnvoie ID=" << newId << " (Server Full)\n";
+    }
+    event.peer->data = reinterpret_cast<void *>(static_cast<uintptr_t>(newId));
+    p.id = newId;
+
+    ENetPacket *packet = enet_packet_create(
+        &p, sizeof(p), ENET_PACKET_FLAG_RELIABLE);
+
+    enet_peer_send(event.peer, 0, packet);
+};
+
+void Server::onReceivePlayerPosition(ENetEvent event)
+{
+    if (event.packet->dataLength != sizeof(ClientPositionPacket))
+        return;
+    auto *p = reinterpret_cast<ClientPositionPacket *>(event.packet->data);
+    auto it = allPlayers.find(p->id);
+    it->second.x = p->x;
+    it->second.y = p->y;
+
+    allPlayers[p->id].x = std::clamp(it->second.x, 0.f, static_cast<float>(Config::Get().windowSize.x));
+    allPlayers[p->id].y = std::clamp(it->second.y, 0.f, static_cast<float>(Config::Get().windowSize.y));
+}
+
+void Server::handleTypeConnect(ENetEvent event)
+{
+    sendNewId(event);
+    // ToDo: Background
+}
+
+void Server::handleTypeReceive(ENetEvent event)
+{
+    if (event.packet)
+    {
+        PacketHeader *h = (PacketHeader *)event.packet->data;
+
+        if (h->type == static_cast<uint8_t>(PacketType::CLIENT_MSG))
+        {
+            switch (h->code)
+            {
+            case static_cast<uint8_t>(ClientMsg::PLAYER_POSITION):
+                onReceivePlayerPosition(event);
+
+            default:
+                return;
+            }
+        }
+    }
+}
+
+void Server::handleTypeDisconnect(ENetEvent event)
+{
+    std::cout << "Client déconnecté" << std::endl;
+
+    for (auto it = allPlayers.begin(); it != allPlayers.end(); ++it)
+    {
+        if (it->second.peer == event.peer)
+        {
+            std::cout << "Suppression joueur id=" << it->first << std::endl;
+
+            allPlayers.erase(it);
+            break;
+        }
+    }
+    event.peer->data = nullptr; // bonne pratique ENet
+}
+
+void Server::handleEnetService()
+{
     ENetEvent event;
     while (enet_host_service(host, &event, 0) > 0)
     {
@@ -45,88 +127,35 @@ void Server::update(float dt)
         {
         case ENET_EVENT_TYPE_CONNECT:
         {
-            int newId = findFreePlayerId();
-
-            ServerAssignIdPacket p;
-            p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
-            p.header.code = static_cast<uint8_t>(ServerMsg::ASSIGN_ID);
-
-            if (newId != 100)
-            {
-                allPlayers[newId].id = newId;
-                allPlayers[newId].x = 0.f;
-                allPlayers[newId].y = 0.f;
-                allPlayers[newId].peer = event.peer;
-                // Associer l'id au peer ENet
-                // event.peer->data = reinterpret_cast<void *>(static_cast<uintptr_t>(newId));
-                // p.id = newId;
-                // std::cout << "[SERVER] demande de connexion.\n Envoie ID=" << newId << "\n";
-            }
-            else
-            {
-                p.id = 100;
-                std::cout << "[SERVER] demande de connexion.\nServer Full (send SPECTATOR ID)\nEnvoie ID=" << newId << " (Server Full)\n";
-            }
-            // event.peer->data = reinterpret_cast<void *>(static_cast<uintptr_t>(newId));
-            p.id = newId;
-
-            ENetPacket *packet = enet_packet_create(
-                &p, sizeof(p), ENET_PACKET_FLAG_RELIABLE);
-
-            enet_peer_send(event.peer, 0, packet);
+            handleTypeConnect(event);
             break;
         }
         case ENET_EVENT_TYPE_RECEIVE:
         {
-            if (event.packet)
-            {
-                PacketHeader *h = (PacketHeader *)event.packet->data;
-
-                if (h->type == static_cast<uint8_t>(PacketType::CLIENT_MSG))
-                {
-                    if (h->code == static_cast<uint8_t>(ClientMsg::PLAYER_POSITION))
-                    {
-                        if (event.packet->dataLength != sizeof(ClientPositionPacket))
-                            break;
-                        auto *p = reinterpret_cast<ClientPositionPacket *>(event.packet->data);
-                        auto it = allPlayers.find(p->id);
-                        it->second.x = p->x;
-                        it->second.y = p->y;
-
-                        allPlayers[p->id].x = std::clamp(it->second.x, 0.f, static_cast<float>(Config::Get().windowSize.x));
-                        allPlayers[p->id].y = std::clamp(it->second.y, 0.f, static_cast<float>(Config::Get().windowSize.y));
-                    }
-                }
-
-                enet_packet_destroy(event.packet);
-            }
+            handleTypeReceive(event);
+            enet_packet_destroy(event.packet);
             break;
         }
         case ENET_EVENT_TYPE_DISCONNECT:
         {
-            std::cout << "Client déconnecté" << std::endl;
-
-            for (auto it = allPlayers.begin(); it != allPlayers.end(); ++it)
-            {
-                if (it->second.peer == event.peer)
-                {
-                    std::cout << "Suppression joueur id=" << it->first << std::endl;
-
-                    allPlayers.erase(it);
-                    break;
-                }
-            }
-
-            event.peer->data = nullptr; // bonne pratique ENet
-            break;
+            handleTypeDisconnect(event);
         }
 
         default:
             break;
         }
     }
+}
 
-    // --- 2. Tick serveur pour broadcast des positions ---
+void Server::update(float dt)
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    if (!host)
+        return;
+
+    handleEnetService();
+
+    // --- Tick serveur pour broadcast des positions ---
     positionAccumulator += dt;
     while (positionAccumulator >= SERVER_TICK)
     {

@@ -17,7 +17,6 @@ public:
     Config &operator=(const Config &) = delete;
 
 public:
-
     // ====== PARAMÈTRES MODIFIABLES ======
     std::string title = "R-Type";
     sf::Vector2u windowSize{1280, 800};
@@ -36,12 +35,14 @@ public:
     float speed = 300.f;
     float frameRate = 0.016f; // 60 hertz
 
+    sf::Texture texture;
+
 private:
     Config()
     {
         if (!font.openFromFile("assets/kenvector_future_thin.ttf"))
-        {
             std::cerr << "[CONFIG] Impossible de charger la font\n";
-        }
+        if (!texture.loadFromFile("assets/r-typesheet42.gif"))
+            std::cerr << "[CONFIG] Impossible de charger r-typesheet42.gif\n";
     }
 };

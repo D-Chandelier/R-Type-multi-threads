@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <enet/enet.h>
+#include <unordered_set>
 #include <iostream>
 #include <vector>
 #include <mutex>
@@ -31,8 +32,14 @@ public:
     void update(float dt);
     void stop();
     bool init();
-    bool onConnected();
-    void sendMsg(ClientMsg msg);
+
+    void handleEnetService();
+    void handleTypeConnect(ENetEvent event);
+    void handleTypeReceive(ENetEvent event);
+    void handleTypeDisconnect(ENetEvent event);
+
+    void eventReceiveId(ENetEvent event);
+    void eventReceivePlayersPositions(ENetEvent event);
 
     ClientState getState() const { return ConnexionState; }
 

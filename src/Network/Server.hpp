@@ -24,6 +24,14 @@ public:
     bool start(uint16_t port);
     void stop();
     void update(float dt);
+
+    void handleEnetService();
+    void handleTypeConnect(ENetEvent event);
+    void handleTypeReceive(ENetEvent event);
+    void handleTypeDisconnect(ENetEvent event);
+    void sendNewId(ENetEvent event);
+    void onReceivePlayerPosition(ENetEvent event);
+
     void broadcastPositions(); // envoie positions à tous les clients
 
     std::map<int, RemotePlayer> getPlayers(); // accès thread-safe

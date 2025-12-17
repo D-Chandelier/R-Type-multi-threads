@@ -23,6 +23,15 @@ void Player::sendPosition(Client &client)
         return;
     if (client.peer)
     {
+        client.localPlayer.position.x = std::clamp(
+            client.localPlayer.position.x,
+            client.localPlayer.sprite.getLocalBounds().getCenter().x * 2,
+            Config::Get().windowSize.x - sprite.getLocalBounds().getCenter().x * 2);
+        client.localPlayer.position.y = std::clamp(
+            client.localPlayer.position.y,
+            client.localPlayer.sprite.getLocalBounds().getCenter().y * 2,
+            Config::Get().windowSize.y - sprite.getLocalBounds().getCenter().y * 2);
+
         ClientPositionPacket p;
         p.header.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
         p.header.code = static_cast<uint8_t>(ClientMsg::PLAYER_POSITION);
