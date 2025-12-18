@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <SFML/Graphics.hpp>
 #include <enet/enet.h>
 #include <unordered_set>
 #include <iostream>
@@ -41,6 +42,14 @@ public:
     void eventReceiveId(ENetEvent event);
     void eventReceivePlayersPositions(ENetEvent event);
 
+    void sendPosition();
+
+    void updateBackgrounds();
+    void updatePlayers();
+    void drawPlayers(sf::RenderWindow &w);
+    void drawBackground(sf::RenderWindow &w);
+
+    double localTimeNow() const;
     ClientState getState() const { return ConnexionState; }
 
     ENetHost *clientHost;
@@ -49,7 +58,17 @@ public:
     Player localPlayer;
     std::map<int, RemotePlayer> allPlayers;
 
+    sf::Texture backgroundTexture1, backgroundTexture2;
+
 private:
     std::mutex mtx;
     ClientState ConnexionState;
+
+    double serverTimeOffset;
+    double backgroundScrollSpeed;
+    double background_1_OffsetX = 0.0;
+    double background_1_OffsetY = 0.0;
+    double background_2_OffsetX = 0.0;
+    double background_2_OffsetY = 0.0;
+    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA; // 6 sommets = 2 triangles
 };

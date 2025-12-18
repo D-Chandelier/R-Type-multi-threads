@@ -3,6 +3,8 @@
 #include <string>
 #include <iostream>
 
+constexpr float BACKGROUND_SCROLL_SPEED = 20.f;
+
 class Config
 {
 public:
@@ -33,7 +35,7 @@ public:
     uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = 300.f;
-    float frameRate = 0.016f; // 60 hertz
+    uint32_t frameRate = 60; // FPS / Hz
 
     sf::Texture texture;
 

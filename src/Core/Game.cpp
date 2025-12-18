@@ -12,6 +12,7 @@ void runServer(Server *server)
     {
         auto now = clock::now();
         float dt = std::chrono::duration<float>(now - last).count();
+        dt = std::min(dt, 0.1f);
         last = now;
 
         server->update(dt);
@@ -26,14 +27,23 @@ void runClient(Client *client)
     using clock = std::chrono::steady_clock;
     auto last = clock::now();
 
+    const float targetFrameTime = 1.f / Config::Get().frameRate;
+
     while (running)
     {
         auto now = clock::now();
         float dt = std::chrono::duration<float>(now - last).count();
         last = now;
 
+        dt = std::min(dt, 0.1f); // sécurité
+
         client->update(dt);
-        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long>(Config::Get().frameRate)));
+
+        float sleepTime = targetFrameTime - dt;
+        if (sleepTime > 0.f)
+        {
+            std::this_thread::sleep_for(std::chrono::duration<float>(targetFrameTime));
+        }
     }
 }
 
@@ -136,14 +146,14 @@ void Game::run()
             {
                 client.localPlayer.position += client.localPlayer.velocity * dt;
                 if (client.localPlayer.position.x < 0)
-                    client.localPlayer.position.x = 0;
+                    client.localPlayer.position.x = client.localPlayer.sprite.getLocalBounds().getCenter().x;
                 if (client.localPlayer.position.x > Config::Get().windowSize.x)
-                    client.localPlayer.position.x = Config::Get().windowSize.x;
+                    client.localPlayer.position.x = Config::Get().windowSize.x - client.localPlayer.sprite.getLocalBounds().getCenter().x;
                 if (client.localPlayer.position.y < 0)
-                    client.localPlayer.position.y = 0;
+                    client.localPlayer.position.y = client.localPlayer.sprite.getLocalBounds().getCenter().y;
                 if (client.localPlayer.position.y > Config::Get().windowSize.y)
-                    client.localPlayer.position.y = Config::Get().windowSize.y;
-                client.localPlayer.sendPosition(client);
+                    client.localPlayer.position.y = Config::Get().windowSize.y - client.localPlayer.sprite.getLocalBounds().getCenter().y;
+                // client.localPlayer.sendPosition(client);
             }
         }
         update(dt);
@@ -225,8 +235,8 @@ void Game::handleMenuAction()
         }
         serverThread = std::thread(runServer, &server);
 
-        // Petit délai pour s'assurer que le serveur est prêt avant connexion client
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        while (!server.serverReady)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
         // --- Démarrage client local ---
         if (!client.init())
@@ -275,21 +285,26 @@ void Game::handleMenuAction()
     }
 }
 
-void Game::updateGameplay(float dt) {}
-
+void Game::updateGameplay(float dt)
+{
+    client.update(dt);
+}
 void Game::drawGameplay(sf::RenderWindow &w)
 {
     int cellWidth = client.localPlayer.sprite.getTexture().getSize().x / 5;
     int cellHeight = client.localPlayer.sprite.getTexture().getSize().y / 5;
 
-    for (const auto &[id, p] : client.allPlayers)
-    {
-        sf::Sprite tempSprite(Config::Get().texture);
-        tempSprite.setTextureRect(sf::IntRect(
-            {2 * cellWidth, id * cellHeight}, {cellWidth, cellHeight}));
-        tempSprite.setScale({2.f, 2.f});
-        tempSprite.setOrigin(tempSprite.getLocalBounds().getCenter());
-        tempSprite.setPosition({p.x, p.y});
-        w.draw(tempSprite);
-    }
+    client.drawBackground(w);
+    client.drawPlayers(w);
+
+    // for (const auto &[id, p] : client.allPlayers)
+    // {
+    //     sf::Sprite tempSprite(Config::Get().texture);
+    //     tempSprite.setTextureRect(sf::IntRect(
+    //         {2 * cellWidth, id * cellHeight}, {cellWidth, cellHeight}));
+    //     tempSprite.setScale({2.f, 2.f});
+    //     tempSprite.setOrigin(tempSprite.getLocalBounds().getCenter());
+    //     tempSprite.setPosition({p.x, p.y});
+    //     w.draw(tempSprite);
+    // }
 }

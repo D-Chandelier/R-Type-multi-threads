@@ -22,7 +22,8 @@ enum class ServerMsg : uint8_t
     GAME_CREATED,
     GAME_JOINED,
     START_GAME,
-    PLAYER_POSITION
+    PLAYER_POSITION,
+    BACKGROUND_STATE
 };
 
 #pragma pack(push, 1)
@@ -44,6 +45,7 @@ struct ServerAssignIdPacket
 {
     PacketHeader header;
     uint32_t id;
+    double serverStartTime; // secondes (horloge serveur)
 };
 
 struct ClientPositionPacket
@@ -59,6 +61,9 @@ struct ServerPositionPacket
     PacketHeader header;
     uint8_t playerCount;
     PlayerState players[MAX_PLAYER];
+
+    double serverGameTime;  // temps serveur actuel
+    float scrollSpeed; 
 };
 
 #pragma pack(pop)
