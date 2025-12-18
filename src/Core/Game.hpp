@@ -11,9 +11,7 @@
 #include "../Network/Client.hpp"
 #include "../Network/Server.hpp"
 #include "../Network/NetworkDiscovery.hpp"
-
-#include "../Entities/EntityManager.hpp"
-#include "../Entities/Player.hpp"
+#include "Utils.hpp"
 
 class Game
 {
@@ -24,10 +22,14 @@ public:
     void drawGameplay(sf::RenderWindow &w);
     void update(float dt);
     void draw(float dt);
+    void handleEvent();
     void handleMenuAction();
+    void onPlayerMove(float dt);
     void updateGameplay(float dt);
-
-    // Player player;
+    void updateBackgrounds();
+    void updatePlayers();
+    void drawBackground();
+    void drawPlayers();
 
 private:
     sf::RenderWindow window;
@@ -48,5 +50,11 @@ private:
 
     GameState state = GameState::MENU_MAIN;
 
-    EntityManager entityManager;
+    sf::Texture backgroundTexture1, backgroundTexture2;
+    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA;
+
+    double background_1_OffsetX = 0.0;
+    double background_1_OffsetY = 0.0;
+    double background_2_OffsetX = 0.0;
+    double background_2_OffsetY = 0.0;
 };

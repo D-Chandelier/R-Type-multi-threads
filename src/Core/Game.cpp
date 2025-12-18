@@ -2,7 +2,61 @@
 
 std::atomic<bool> running{true};
 
-// Threads réseau
+Game::Game()
+    : window(sf::VideoMode(Config::Get().windowSize),
+             Config::Get().title),
+      menuMain(),
+      menuServers(client, discoveryClient),
+      menuOption(),
+      menuInGame(),
+      menuBackground(Config::Get().font)
+{
+    currentMenu = &menuMain;
+
+    // Taille d'une cellule
+    int cellWidth = Config::Get().texture.getSize().x / 5;
+    int cellHeight = Config::Get().texture.getSize().y / 5;
+
+    if (!backgroundTexture1.loadFromFile("assets/Starfield_07-1024x1024.png"))
+    {
+        std::cerr << "Erreur chargement texture background 1\n";
+    }
+    backgroundTexture1.setRepeated(true); // optionnel mais propre
+    if (!backgroundTexture2.loadFromFile("assets/Blue_Nebula_08-1024x1024.png"))
+    {
+        std::cerr << "Erreur chargement texture background 2\n";
+    }
+    backgroundTexture2.setRepeated(true);
+
+    playersVA.setPrimitiveType(sf::PrimitiveType::Triangles);
+    playersVA.resize(6 * Config::Get().maxPlayers);
+
+    backgroundVA_1.setPrimitiveType(sf::PrimitiveType::Triangles);
+    backgroundVA_1.resize(6); // 2 triangles
+    backgroundVA_2.setPrimitiveType(sf::PrimitiveType::Triangles);
+    backgroundVA_2.resize(6); // 2 triangles
+
+    // Définir positions fixes de l'écran
+    float w = static_cast<float>(Config::Get().windowSize.x);
+    float h = static_cast<float>(Config::Get().windowSize.y);
+
+    // 1er triangle
+    backgroundVA_1[0].position = {0.f, 0.f};
+    backgroundVA_1[1].position = {w, 0.f};
+    backgroundVA_1[2].position = {w, h};
+    backgroundVA_2[0].position = {0.f, 0.f};
+    backgroundVA_2[1].position = {w, 0.f};
+    backgroundVA_2[2].position = {w, h};
+
+    // 2e triangle
+    backgroundVA_1[3].position = {0.f, 0.f};
+    backgroundVA_1[4].position = {w, h};
+    backgroundVA_1[5].position = {0.f, h};
+    backgroundVA_2[3].position = {0.f, 0.f};
+    backgroundVA_2[4].position = {w, h};
+    backgroundVA_2[5].position = {0.f, h};
+}
+
 void runServer(Server *server)
 {
     using clock = std::chrono::steady_clock;
@@ -67,127 +121,76 @@ void Game::stopThreads()
     discoveryClient.stopListening();
 }
 
-Game::Game()
-    : window(sf::VideoMode(Config::Get().windowSize),
-             Config::Get().title),
-      menuMain(),
-      menuServers(client, discoveryClient),
-      menuOption(),
-      menuInGame(),
-      menuBackground(Config::Get().font)
+void Game::handleEvent()
 {
-    currentMenu = &menuMain;
-}
-
-void Game::run()
-{
-    sf::Clock clock;
-    // Background bg(Config::Get().font);
-
-    while (window.isOpen())
+    while (auto event = window.pollEvent())
     {
-        float dt = clock.restart().asSeconds();
-
-        // 1. Gestion des events (juste fermeture, menus...)
-        while (auto event = window.pollEvent())
+        if (event->is<sf::Event::Closed>())
         {
-            if (event->is<sf::Event::Closed>())
+            stopThreads();
+            window.close();
+        }
+        if (auto *e = event->getIf<sf::Event::KeyPressed>())
+        {
+            if (e->code == sf::Keyboard::Key::Escape)
             {
-                stopThreads();
-                window.close();
-            }
-            if (auto *e = event->getIf<sf::Event::KeyPressed>())
-            {
-                if (e->code == sf::Keyboard::Key::Escape)
+                if (state == GameState::IN_GAME)
                 {
-                    if (state == GameState::IN_GAME)
-                    {
-                        state = GameState::MENU_IN_GAME;
-                        currentMenu = &menuInGame;
-                        currentMenu->reset();
-                    }
-                    else if (state == GameState::MENU_IN_GAME)
-                    {
-                        state = GameState::IN_GAME;
-                        currentMenu = nullptr;
-                    }
-                    else if (state == GameState::MENU_JOIN || state == GameState::MENU_OPTION)
-                    {
-                        stopThreads();
-                        state = GameState::MENU_MAIN;
-                        currentMenu = &menuMain;
-                        currentMenu->reset();
-                    }
+                    state = GameState::MENU_IN_GAME;
+                    currentMenu = &menuInGame;
+                    currentMenu->reset();
+                }
+                else if (state == GameState::MENU_IN_GAME)
+                {
+                    state = GameState::IN_GAME;
+                    currentMenu = nullptr;
+                }
+                else if (state == GameState::MENU_JOIN || state == GameState::MENU_OPTION)
+                {
+                    stopThreads();
+                    state = GameState::MENU_MAIN;
+                    currentMenu = &menuMain;
+                    currentMenu->reset();
                 }
             }
-
-            if (currentMenu && state != GameState::IN_GAME)
-                currentMenu->handleEvent(*event, window);
         }
 
-        // 2. Calcul mouvement joueur chaque frame
-        if (state == GameState::IN_GAME)
+        if (currentMenu && state != GameState::IN_GAME)
+            currentMenu->handleEvent(*event, window);
+    }
+}
+
+void Game::onPlayerMove(float dt)
+{
+    if (state == GameState::IN_GAME)
+    {
+        client.localPlayer.velocity = {0.f, 0.f};
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
+            client.localPlayer.velocity.x -= Config::Get().speed;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+            client.localPlayer.velocity.x += Config::Get().speed;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
+            client.localPlayer.velocity.y -= Config::Get().speed;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
+            client.localPlayer.velocity.y += Config::Get().speed;
+
+        // normaliser la diagonale si besoin
+        if (client.localPlayer.velocity.x != 0.f && client.localPlayer.velocity.y != 0.f)
+            client.localPlayer.velocity /= std::sqrt(2.f);
+
+        if (client.localPlayer.velocity != sf::Vector2f(0, 0))
         {
-            client.localPlayer.velocity = {0.f, 0.f};
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-                client.localPlayer.velocity.x -= Config::Get().speed;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
-                client.localPlayer.velocity.x += Config::Get().speed;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
-                client.localPlayer.velocity.y -= Config::Get().speed;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
-                client.localPlayer.velocity.y += Config::Get().speed;
-
-            // normaliser la diagonale si besoin
-            if (client.localPlayer.velocity.x != 0.f && client.localPlayer.velocity.y != 0.f)
-                client.localPlayer.velocity /= std::sqrt(2.f);
-
-            if (client.localPlayer.velocity != sf::Vector2f(0, 0))
-            {
-                client.localPlayer.position += client.localPlayer.velocity * dt;
-                if (client.localPlayer.position.x < 0)
-                    client.localPlayer.position.x = client.localPlayer.sprite.getLocalBounds().getCenter().x;
-                if (client.localPlayer.position.x > Config::Get().windowSize.x)
-                    client.localPlayer.position.x = Config::Get().windowSize.x - client.localPlayer.sprite.getLocalBounds().getCenter().x;
-                if (client.localPlayer.position.y < 0)
-                    client.localPlayer.position.y = client.localPlayer.sprite.getLocalBounds().getCenter().y;
-                if (client.localPlayer.position.y > Config::Get().windowSize.y)
-                    client.localPlayer.position.y = Config::Get().windowSize.y - client.localPlayer.sprite.getLocalBounds().getCenter().y;
-                // client.localPlayer.sendPosition(client);
-            }
+            client.localPlayer.position += client.localPlayer.velocity * dt;
+            if (client.localPlayer.position.x < 0)
+                client.localPlayer.position.x = client.localPlayer.sprite.getLocalBounds().getCenter().x;
+            if (client.localPlayer.position.x > Config::Get().windowSize.x)
+                client.localPlayer.position.x = Config::Get().windowSize.x - client.localPlayer.sprite.getLocalBounds().getCenter().x;
+            if (client.localPlayer.position.y < 0)
+                client.localPlayer.position.y = client.localPlayer.sprite.getLocalBounds().getCenter().y;
+            if (client.localPlayer.position.y > Config::Get().windowSize.y)
+                client.localPlayer.position.y = Config::Get().windowSize.y - client.localPlayer.sprite.getLocalBounds().getCenter().y;
         }
-        update(dt);
-        draw(dt);
     }
-}
-
-void Game::update(float dt)
-{
-    if (currentMenu && state != GameState::IN_GAME)
-    {
-        currentMenu->update(dt, window);
-        menuBackground.update(dt);
-        handleMenuAction(); // <-- important
-    }
-    else if (state == GameState::IN_GAME)
-    {
-        updateGameplay(dt); // <-- ta future logique in-game
-    }
-}
-
-void Game::draw(float dt)
-{
-    window.clear(Config::Get().backgroundColor);
-
-    if (state != GameState::IN_GAME)
-    {
-        menuBackground.draw(window);
-        currentMenu->draw(window);
-    }
-    else
-        drawGameplay(window);
-
-    window.display();
 }
 
 void Game::handleMenuAction()
@@ -285,26 +288,178 @@ void Game::handleMenuAction()
     }
 }
 
+void Game::run()
+{
+    sf::Clock clock;
+
+    while (window.isOpen())
+    {
+        float dt = clock.restart().asSeconds();
+
+        // 1. Gestion des events (juste fermeture, menus...)
+        handleEvent();
+
+        // 2. Calcul mouvement joueur chaque frame
+        onPlayerMove(dt);
+
+        update(dt);
+        draw(dt);
+    }
+}
+
+void Game::update(float dt)
+{
+    if (currentMenu && state != GameState::IN_GAME)
+    {
+        currentMenu->update(dt, window);
+        menuBackground.update(dt);
+        handleMenuAction(); // <-- important
+    }
+    else if (state == GameState::IN_GAME)
+    {
+        updateGameplay(dt); // <-- ta future logique in-game
+    }
+}
+
 void Game::updateGameplay(float dt)
 {
-    client.update(dt);
+    updateBackgrounds();
+    updatePlayers();
 }
+
+void Game::draw(float dt)
+{
+    window.clear(Config::Get().backgroundColor);
+
+    if (state != GameState::IN_GAME)
+    {
+        menuBackground.draw(window);
+        currentMenu->draw(window);
+    }
+    else
+        drawGameplay(window);
+
+    window.display();
+}
+
 void Game::drawGameplay(sf::RenderWindow &w)
 {
     int cellWidth = client.localPlayer.sprite.getTexture().getSize().x / 5;
     int cellHeight = client.localPlayer.sprite.getTexture().getSize().y / 5;
 
-    client.drawBackground(w);
-    client.drawPlayers(w);
+    drawBackground();
+    drawPlayers();
+}
 
-    // for (const auto &[id, p] : client.allPlayers)
-    // {
-    //     sf::Sprite tempSprite(Config::Get().texture);
-    //     tempSprite.setTextureRect(sf::IntRect(
-    //         {2 * cellWidth, id * cellHeight}, {cellWidth, cellHeight}));
-    //     tempSprite.setScale({2.f, 2.f});
-    //     tempSprite.setOrigin(tempSprite.getLocalBounds().getCenter());
-    //     tempSprite.setPosition({p.x, p.y});
-    //     w.draw(tempSprite);
-    // }
+void Game::updateBackgrounds()
+{
+
+    float texW = static_cast<float>(backgroundTexture1.getSize().x);
+    float texH = static_cast<float>(backgroundTexture1.getSize().y);
+    sf::Vector2f winSize = {static_cast<float>(Config::Get().windowSize.x), static_cast<float>(Config::Get().windowSize.y)};
+
+    double gameTime = localTimeNow() + client.serverTimeOffset;
+
+    background_1_OffsetX = std::fmod(
+        static_cast<float>(gameTime) * client.backgroundScrollSpeed,
+        texH);
+    background_2_OffsetX = std::fmod(
+        static_cast<float>(gameTime) * client.backgroundScrollSpeed * 2.f,
+        texH);
+
+    // offset horizontal ou vertical
+    float offsetX = background_1_OffsetX; // déjà calculé
+    float offsetY = background_1_OffsetY; // pour vertical
+
+    // Scroll horizontal + vertical, en boucle grâce à setRepeated(true)
+    backgroundVA_1[0].texCoords = {offsetX, offsetY};
+    backgroundVA_1[1].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY};
+    backgroundVA_1[2].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
+    backgroundVA_1[3].texCoords = {offsetX, offsetY};
+    backgroundVA_1[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
+    backgroundVA_1[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
+    offsetX = background_2_OffsetX; // déjà calculé
+    offsetY = background_2_OffsetY; // pour vertical
+    backgroundVA_2[0].texCoords = {offsetX, offsetY};
+    backgroundVA_2[1].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY};
+    backgroundVA_2[2].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
+    backgroundVA_2[3].texCoords = {offsetX, offsetY};
+    backgroundVA_2[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
+    backgroundVA_2[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
+
+    sf::Color alphaColor(255, 255, 255, 128); // 50% transparent
+
+    for (size_t i = 0; i < backgroundVA_2.getVertexCount(); ++i)
+        backgroundVA_2[i].color = alphaColor; // 50% transparent
+}
+
+void Game::updatePlayers()
+{
+    for (auto &[id, p] : client.allPlayers)
+    {
+        // Temps écoulé depuis la dernière position serveur
+        double delta = localTimeNow() - p.lastUpdateTime;
+        // Interpolation simple
+        float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
+        alpha = std::clamp(alpha, 0.f, 1.f);
+
+        p.x += (p.serverX - p.x) * alpha;
+        p.y += (p.serverY - p.y) * alpha;
+    }
+
+    int i = 0;
+    int cellWidth = Config::Get().texture.getSize().x / 5;
+    int cellHeight = Config::Get().texture.getSize().y / 5;
+
+    playersVA.resize(client.allPlayers.size() * 6);
+
+    for (const auto &[id, p] : client.allPlayers)
+    {
+
+        sf::Vector2f origin = client.localPlayer.sprite.getOrigin();
+        sf::Vector2f scale = client.localPlayer.sprite.getScale();
+        float w = static_cast<float>(cellWidth) * scale.x;
+        float h = static_cast<float>(cellHeight) * scale.y;
+
+        float x = (p.x - origin.x * scale.x);
+        float y = (p.y - origin.y * scale.y);
+
+        // positions du quad (2 triangles)
+        playersVA[i * 6 + 0].position = {x, y};
+        playersVA[i * 6 + 1].position = {x + w, y};
+        playersVA[i * 6 + 2].position = {x + w, y + h};
+
+        playersVA[i * 6 + 3].position = {x, y};
+        playersVA[i * 6 + 4].position = {x + w, y + h};
+        playersVA[i * 6 + 5].position = {x, y + h};
+
+        // texCoords selon sprite dans spritesheet
+        float tx = 2 * cellWidth;
+        float ty = id * cellHeight;
+        playersVA[i * 6 + 0].texCoords = {tx, ty};
+        playersVA[i * 6 + 1].texCoords = {tx + cellWidth, ty};
+        playersVA[i * 6 + 2].texCoords = {tx + cellWidth, ty + cellHeight};
+        playersVA[i * 6 + 3].texCoords = {tx, ty};
+        playersVA[i * 6 + 4].texCoords = {tx + cellWidth, ty + cellHeight};
+        playersVA[i * 6 + 5].texCoords = {tx, ty + cellHeight};
+
+        i++;
+    }
+}
+
+void Game::drawBackground()
+{
+    sf::RenderStates states_1, states_2;
+    states_1.texture = &backgroundTexture1;
+    states_2.texture = &backgroundTexture2;
+
+    window.draw(backgroundVA_1, states_1);
+    window.draw(backgroundVA_2, states_2);
+}
+
+void Game::drawPlayers()
+{
+    sf::RenderStates states;
+    states.texture = &Config::Get().texture;
+    window.draw(playersVA, states);
 }

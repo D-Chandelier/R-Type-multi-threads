@@ -5,55 +5,52 @@ Client::Client()
       peer(nullptr),
       ConnexionState(ClientState::DISCONNECTED)
 {
-    if (!localPlayer.texture.loadFromFile("assets/r-typesheet42.gif"))
-        std::cout << "Erreur loading r-typesheet42.gif" << "\n";
+    // localPlayer.sprite.setTexture(Config::Get().texture);
 
-    localPlayer.sprite.setTexture(localPlayer.texture);
+    // // Taille d'une cellule
+    // int cellWidth = localPlayer.sprite.getTexture().getSize().x / 5;
+    // int cellHeight = localPlayer.sprite.getTexture().getSize().y / 5;
+    // localPlayer.sprite.setTextureRect(sf::IntRect(
+    //     {2 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}));
 
-    // Taille d'une cellule
-    int cellWidth = localPlayer.sprite.getTexture().getSize().x / 5;
-    int cellHeight = localPlayer.sprite.getTexture().getSize().y / 5;
-    localPlayer.sprite.setTextureRect(sf::IntRect(
-        {2 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}));
+    // if (!backgroundTexture1.loadFromFile("assets/Starfield_07-1024x1024.png"))
+    // {
+    //     std::cerr << "Erreur chargement texture background 1\n";
+    // }
+    // backgroundTexture1.setRepeated(true); // optionnel mais propre
+    // if (!backgroundTexture2.loadFromFile("assets/Blue_Nebula_08-1024x1024.png"))
+    // {
+    //     std::cerr << "Erreur chargement texture background 2\n";
+    // }
+    // backgroundTexture2.setRepeated(true);
 
-    if (!backgroundTexture1.loadFromFile("assets/Starfield_07-1024x1024.png"))
-    {
-        std::cerr << "Erreur chargement texture background 1\n";
-    }
-    backgroundTexture1.setRepeated(true); // optionnel mais propre
-    if (!backgroundTexture2.loadFromFile("assets/Blue_Nebula_08-1024x1024.png"))
-    {
-        std::cerr << "Erreur chargement texture background 2\n";
-    }
-    backgroundTexture2.setRepeated(true);
+    // playersVA.setPrimitiveType(sf::PrimitiveType::Triangles);
+    // playersVA.resize(6 * Config::Get().maxPlayers);
 
-    playersVA.setPrimitiveType(sf::PrimitiveType::Triangles);
-    playersVA.resize(6 * Config::Get().maxPlayers);
+    // backgroundVA_1.setPrimitiveType(sf::PrimitiveType::Triangles);
+    // backgroundVA_1.resize(6); // 2 triangles
+    // backgroundVA_2.setPrimitiveType(sf::PrimitiveType::Triangles);
+    // backgroundVA_2.resize(6); // 2 triangles
 
-    backgroundVA_1.setPrimitiveType(sf::PrimitiveType::Triangles);
-    backgroundVA_1.resize(6); // 2 triangles
-    backgroundVA_2.setPrimitiveType(sf::PrimitiveType::Triangles);
-    backgroundVA_2.resize(6); // 2 triangles
+    // // Définir positions fixes de l'écran
+    // float w = static_cast<float>(Config::Get().windowSize.x);
+    // float h = static_cast<float>(Config::Get().windowSize.y);
 
-    // Définir positions fixes de l'écran
-    float w = static_cast<float>(Config::Get().windowSize.x);
-    float h = static_cast<float>(Config::Get().windowSize.y);
+    // // 1er triangle
+    // backgroundVA_1[0].position = {0.f, 0.f};
+    // backgroundVA_1[1].position = {w, 0.f};
+    // backgroundVA_1[2].position = {w, h};
+    // backgroundVA_2[0].position = {0.f, 0.f};
+    // backgroundVA_2[1].position = {w, 0.f};
+    // backgroundVA_2[2].position = {w, h};
 
-    // 1er triangle
-    backgroundVA_1[0].position = {0.f, 0.f};
-    backgroundVA_1[1].position = {w, 0.f};
-    backgroundVA_1[2].position = {w, h};
-    backgroundVA_2[0].position = {0.f, 0.f};
-    backgroundVA_2[1].position = {w, 0.f};
-    backgroundVA_2[2].position = {w, h};
-
-    // 2e triangle
-    backgroundVA_1[3].position = {0.f, 0.f};
-    backgroundVA_1[4].position = {w, h};
-    backgroundVA_1[5].position = {0.f, h};
-    backgroundVA_2[3].position = {0.f, 0.f};
-    backgroundVA_2[4].position = {w, h};
-    backgroundVA_2[5].position = {0.f, h};
+    // // 2e triangle
+    // backgroundVA_1[3].position = {0.f, 0.f};
+    // backgroundVA_1[4].position = {w, h};
+    // backgroundVA_1[5].position = {0.f, h};
+    // backgroundVA_2[3].position = {0.f, 0.f};
+    // backgroundVA_2[4].position = {w, h};
+    // backgroundVA_2[5].position = {0.f, h};
 }
 
 Client::~Client() { stop(); }
@@ -120,14 +117,6 @@ void Client::eventReceivePlayersPositions(ENetEvent event)
     for (int i = 0; i < p->playerCount; i++)
     {
         int pid = p->players[i].id;
-
-        // if (pid == localPlayer.id)
-        // {
-        //     // Mettre à jour seulement la position locale si nécessaire
-        //     localPlayer.position.x = p->players[i].x;
-        //     localPlayer.position.y = p->players[i].y;
-        //     continue;
-        // }
 
         seenIds.insert(pid);
 
@@ -201,10 +190,10 @@ void Client::handleTypeReceive(ENetEvent event)
             {
             case static_cast<uint8_t>(ServerMsg::ASSIGN_ID):
                 eventReceiveId(event);
-
+                break;
             case static_cast<uint8_t>(ServerMsg::PLAYER_POSITION):
                 eventReceivePlayersPositions(event);
-
+                break;
             default:
                 return;
             }
@@ -247,13 +236,8 @@ void Client::handleEnetService()
 void Client::update(float dt)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    if (!clientHost)
-        return;
-
-    sendPosition();
-    updateBackgrounds();
-    updatePlayers();
     handleEnetService();
+    sendPosition();
 }
 
 void Client::sendPosition()
@@ -283,133 +267,8 @@ void Client::sendPosition()
         p.id = localPlayer.id;
         p.x = localPlayer.position.x;
         p.y = localPlayer.position.y;
-        // std::cout
-        //     << "[PLAYER] sendPosition(PLAYER_POSITION):\n"
-        //     << "Id: " << p.id << "\n"
-        //     << "Poition > x: " << p.x << ", y: " << p.y << "\n";
 
         ENetPacket *packet = enet_packet_create(&p, sizeof(p), 0);
         enet_peer_send(peer, 0, packet);
-        // enet_host_flush(client.clientHost);
     }
-}
-
-void Client::updateBackgrounds()
-{
-
-    float texW = static_cast<float>(backgroundTexture1.getSize().x);
-    float texH = static_cast<float>(backgroundTexture1.getSize().y);
-    sf::Vector2f winSize = {static_cast<float>(Config::Get().windowSize.x), static_cast<float>(Config::Get().windowSize.y)};
-
-    double gameTime = localTimeNow() + serverTimeOffset;
-
-    background_1_OffsetX = std::fmod(
-        static_cast<float>(gameTime) * backgroundScrollSpeed,
-        texH);
-    background_2_OffsetX = std::fmod(
-        static_cast<float>(gameTime) * backgroundScrollSpeed * 2.f,
-        texH);
-
-    // offset horizontal ou vertical
-    float offsetX = background_1_OffsetX; // déjà calculé
-    float offsetY = background_1_OffsetY; // pour vertical
-
-    // Scroll horizontal + vertical, en boucle grâce à setRepeated(true)
-    backgroundVA_1[0].texCoords = {offsetX, offsetY};
-    backgroundVA_1[1].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY};
-    backgroundVA_1[2].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
-    backgroundVA_1[3].texCoords = {offsetX, offsetY};
-    backgroundVA_1[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
-    backgroundVA_1[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
-    offsetX = background_2_OffsetX; // déjà calculé
-    offsetY = background_2_OffsetY; // pour vertical
-    backgroundVA_2[0].texCoords = {offsetX, offsetY};
-    backgroundVA_2[1].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY};
-    backgroundVA_2[2].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
-    backgroundVA_2[3].texCoords = {offsetX, offsetY};
-    backgroundVA_2[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
-    backgroundVA_2[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
-
-    sf::Color alphaColor(255, 255, 255, 128); // 50% transparent
-
-    for (size_t i = 0; i < backgroundVA_2.getVertexCount(); ++i)
-        backgroundVA_2[i].color = alphaColor; // 50% transparent
-}
-void Client::updatePlayers()
-{
-    for (auto &[id, p] : allPlayers)
-    {
-        // if (id != localPlayer.id)
-        // {
-        // Temps écoulé depuis la dernière position serveur
-        double delta = localTimeNow() - p.lastUpdateTime;
-        // Interpolation simple
-        float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
-        alpha = std::clamp(alpha, 0.f, 1.f);
-
-        p.x += (p.serverX - p.x) * alpha;
-        p.y += (p.serverY - p.y) * alpha;
-        // }
-        // else
-        // {
-        //     p.x = localPlayer.position.x;
-        //     p.y = localPlayer.position.y;
-        // }
-    }
-
-    int i = 0;
-    int cellWidth = localPlayer.texture.getSize().x / 5;
-    int cellHeight = localPlayer.texture.getSize().y / 5;
-
-    playersVA.resize(allPlayers.size() * 6);
-
-    for (int i = 0; i < allPlayers.size(); ++i)
-    {
-        const auto &[id, p] = *std::next(allPlayers.begin(), i);
-
-        sf::Vector2f origin = localPlayer.sprite.getOrigin();
-        sf::Vector2f scale = localPlayer.sprite.getScale();
-
-        float w = static_cast<float>(cellWidth) * scale.x;
-        float h = static_cast<float>(cellHeight) * scale.y;
-
-        float x = (p.x - origin.x * scale.x);
-        float y = (p.y - origin.y * scale.y);
-
-        // positions du quad (2 triangles)
-        playersVA[i * 6 + 0].position = {x, y};
-        playersVA[i * 6 + 1].position = {x + w, y};
-        playersVA[i * 6 + 2].position = {x + w, y + h};
-
-        playersVA[i * 6 + 3].position = {x, y};
-        playersVA[i * 6 + 4].position = {x + w, y + h};
-        playersVA[i * 6 + 5].position = {x, y + h};
-
-        // texCoords selon sprite dans spritesheet
-        float tx = 2 * cellWidth;
-        float ty = id * cellHeight;
-        playersVA[i * 6 + 0].texCoords = {tx, ty};
-        playersVA[i * 6 + 1].texCoords = {tx + cellWidth, ty};
-        playersVA[i * 6 + 2].texCoords = {tx + cellWidth, ty + cellHeight};
-        playersVA[i * 6 + 3].texCoords = {tx, ty};
-        playersVA[i * 6 + 4].texCoords = {tx + cellWidth, ty + cellHeight};
-        playersVA[i * 6 + 5].texCoords = {tx, ty + cellHeight};
-    }
-}
-
-void Client::drawPlayers(sf::RenderWindow &w)
-{
-    sf::RenderStates states;
-    states.texture = &Config::Get().texture;
-    w.draw(playersVA, states);
-}
-
-void Client::drawBackground(sf::RenderWindow &w)
-{
-    sf::RenderStates states_1, states_2;
-    states_1.texture = &backgroundTexture1;
-    states_2.texture = &backgroundTexture2;
-
-    w.draw(backgroundVA_1, states_1);
-    w.draw(backgroundVA_2, states_2);
 }

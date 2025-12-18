@@ -72,13 +72,6 @@ MenuOption::MenuOption()
     quit.onClickCallback([this]()
                          { this->action = MenuAction::GO_TO_MAIN_MENU; });
 
-    // Bouton Retour
-    // quit.setString("Retour");
-    // quit.setCharacterSize(32);
-    // quit.setFillColor(Config::Get().fontColor);
-    // quit.setOrigin(quit.getLocalBounds().getCenter());
-    // quit.setPosition({cx, cy * 9});
-
     reset();
 }
 
@@ -93,11 +86,7 @@ void MenuOption::update(float dt, sf::RenderWindow &w)
 {
     sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
 
-    // Hover bouton Retour
-    // quit.setFillColor(quit.getGlobalBounds().contains(mp) ? Config::Get().hoverColor : Config::Get().fontColor);
     quit.update(w);
-
-    // tbPort.checkFocus(mp);
     tbPort.update(dt);
 
     std::string txt;
@@ -130,10 +119,6 @@ void MenuOption::handleEvent(const sf::Event &e, sf::RenderWindow &w)
         // Focus champ port au clic
         tbPort.checkFocus(mp);
 
-        // Boutons
-        // if (quit.getGlobalBounds().contains(mp))
-        //     action = MenuAction::GO_TO_MAIN_MENU;
-
         if (saveIcon.getGlobalBounds().contains(mp))
         {
             try
@@ -161,5 +146,4 @@ void MenuOption::draw(sf::RenderWindow &w)
     if (showCocheIcon)
         w.draw(cocheIcon);
     quit.draw(w);
-    // w.draw(quit);
 }

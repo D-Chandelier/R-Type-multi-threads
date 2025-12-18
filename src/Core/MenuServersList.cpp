@@ -310,8 +310,6 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
     };
 
     quit.update(w);
-    // hover(quit);
-    // hover(testButton);
 
     testStatus.setString(lastTestResult);
     testStatus.setOrigin(testStatus.getLocalBounds().getCenter());
@@ -328,9 +326,6 @@ void MenuServersList::handleEvent(const sf::Event &e, sf::RenderWindow &w)
         tbPort.checkFocus(mp);
         tbIp.checkFocus(mp);
 
-        // if (quit.getGlobalBounds().contains(mp))
-        //     action = MenuAction::GO_TO_MAIN_MENU;
-
         // Accès sécurisé pour servers
         if (hoveredIndex >= 0)
         {
@@ -342,102 +337,7 @@ void MenuServersList::handleEvent(const sf::Event &e, sf::RenderWindow &w)
                 action = MenuAction::JOIN_SERVER;
             }
         }
-
-        // if (testButton.getGlobalBounds().contains(mp))
-        // {
-        //     if (!testing)
-        //     {
-        //         testing = true;
-        //         lastTestResult = "Test en cours...";
-        //         lastTestColor = sf::Color::Yellow;
-        //         testStatus.setString(lastTestResult);
-
-        //         std::thread([this]()
-        //                     {
-
-        //             // Résolution IP
-        //             auto resolved = sf::IpAddress::resolve(tbIp.value);
-        //             if (!resolved.has_value())
-        //             {
-        //                 std::lock_guard<std::mutex> lock(testMutex);
-        //                 lastTestResult = "IP invalide";
-        //                 lastTestColor = sf::Color::Red;
-        //                 testing = false;
-        //                 return;
-        //             }
-
-        //             sf::IpAddress ip = *resolved;
-        //             unsigned short port = 0;
-
-        //             try
-        //             {
-        //                 port = static_cast<unsigned short>(std::stoi(tbPort.value));
-        //             }
-        //             catch (...)
-        //             {
-        //                 std::lock_guard<std::mutex> lock(testMutex);
-        //                 lastTestResult = "Port invalide";
-        //                 lastTestColor = sf::Color::Red;
-        //                 testing = false;
-        //                 return;
-        //             }
-
-        //             bool ok = false;
-
-        //             // ---- Test réel ENet ----
-        //             ENetHost *client = enet_host_create(nullptr, 1, 1, 0, 0);
-        //             if (!client)
-        //             {
-        //                 std::lock_guard<std::mutex> lock(testMutex);
-        //                 lastTestResult = "Impossible de créer le client ENet";
-        //                 lastTestColor = sf::Color::Red;
-        //                 testing = false;
-        //                 return;
-        //             }
-
-        //             ENetAddress address;
-        //             enet_address_set_host(&address, tbIp.value.c_str());
-        //             address.port = port;
-
-        //             ENetPeer *peer = enet_host_connect(client, &address, 1, 0);
-        //             if (!peer)
-        //             {
-        //                 std::lock_guard<std::mutex> lock(testMutex);
-        //                 lastTestResult = "Impossible de se connecter au serveur";
-        //                 lastTestColor = sf::Color::Red;
-        //                 enet_host_destroy(client);
-        //                 testing = false;
-        //                 return;
-        //             }
-
-        //             ENetEvent event;
-        //             if (enet_host_service(client, &event, 500) > 0 && event.type == ENET_EVENT_TYPE_CONNECT)
-        //             {
-        //                 ok = true;
-        //                 enet_peer_disconnect(peer, 0);
-        //             }
-
-        //             enet_host_destroy(client);
-
-        //             if (ok)
-        //             {
-        //                 Config::Get().serverIp = tbIp.value.c_str();
-        //                 Config::Get().serverPort = port;
-
-        //                 action = MenuAction::JOIN_SERVER;
-        //             }
-        //             else
-        //             {
-        //                 std::lock_guard<std::mutex> lock(testMutex);
-        //                 lastTestResult = "Serveur non joignable (ENet)";
-        //                 lastTestColor = sf::Color::Red;
-        //             }
-        //             testing = false; })
-        //             .detach();
-        //     }
-        // }
     }
-
     tbPort.handleEvent(e);
     tbIp.handleEvent(e);
 }
@@ -461,10 +361,7 @@ void MenuServersList::draw(sf::RenderWindow &w)
 
     tbIp.draw(w);
     tbPort.draw(w);
-
     buttonTest.draw(w);
-    // w.draw(testButton);
     w.draw(testStatus);
     quit.draw(w);
-    // w.draw(quit);
 }

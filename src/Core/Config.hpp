@@ -35,7 +35,7 @@ public:
     uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = 300.f;
-    uint32_t frameRate = 60; // FPS / Hz
+    uint32_t frameRate = 120; // FPS / Hz
 
     sf::Texture texture;
 

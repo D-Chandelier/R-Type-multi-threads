@@ -44,11 +44,6 @@ public:
 
     void sendPosition();
 
-    void updateBackgrounds();
-    void updatePlayers();
-    void drawPlayers(sf::RenderWindow &w);
-    void drawBackground(sf::RenderWindow &w);
-
     double localTimeNow() const;
     ClientState getState() const { return ConnexionState; }
 
@@ -58,17 +53,10 @@ public:
     Player localPlayer;
     std::map<int, RemotePlayer> allPlayers;
 
-    sf::Texture backgroundTexture1, backgroundTexture2;
+    double serverTimeOffset;
+    double backgroundScrollSpeed;
 
 private:
     std::mutex mtx;
     ClientState ConnexionState;
-
-    double serverTimeOffset;
-    double backgroundScrollSpeed;
-    double background_1_OffsetX = 0.0;
-    double background_1_OffsetY = 0.0;
-    double background_2_OffsetX = 0.0;
-    double background_2_OffsetY = 0.0;
-    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA; // 6 sommets = 2 triangles
 };
