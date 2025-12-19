@@ -13,10 +13,6 @@ Game::Game()
 {
     currentMenu = &menuMain;
 
-    // Taille d'une cellule
-    int cellWidth = Config::Get().texture.getSize().x / 5;
-    int cellHeight = Config::Get().texture.getSize().y / 5;
-
     if (!backgroundTexture1.loadFromFile("assets/Starfield_07-1024x1024.png"))
     {
         std::cerr << "Erreur chargement texture background 1\n";
@@ -35,6 +31,8 @@ Game::Game()
     backgroundVA_1.resize(6); // 2 triangles
     backgroundVA_2.setPrimitiveType(sf::PrimitiveType::Triangles);
     backgroundVA_2.resize(6); // 2 triangles
+
+    bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
 
     // Définir positions fixes de l'écran
     float w = static_cast<float>(Config::Get().windowSize.x);
@@ -162,35 +160,47 @@ void Game::handleEvent()
 
 void Game::onPlayerMove(float dt)
 {
-    if (state == GameState::IN_GAME)
+    if (state != GameState::IN_GAME)
+        return;
+
+    // --- Mouvement ---
+    bool left  = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
+    bool right = sf::Keyboard::isKeyPressed(Config::Get().keys.right);
+    bool up    = sf::Keyboard::isKeyPressed(Config::Get().keys.up);
+    bool down  = sf::Keyboard::isKeyPressed(Config::Get().keys.down);
+
+    sf::Vector2f vel{0.f, 0.f};
+
+    if (left && !right)  vel.x = -Config::Get().speed;
+    if (right && !left)  vel.x =  Config::Get().speed;
+    if (up && !down)     vel.y = -Config::Get().speed;
+    if (down && !up)     vel.y =  Config::Get().speed;
+
+    // normaliser diagonale
+    if (vel.x != 0.f && vel.y != 0.f)
+        vel /= std::sqrt(2.f);
+
+    client.localPlayer.velocity = vel;
+    client.localPlayer.position.x += vel.x * dt;
+    client.localPlayer.position.y += vel.y * dt;
+    
+    // clamp dans la fenêtre
+    client.localPlayer.position.x = std::clamp(client.localPlayer.position.x, 0.f, static_cast<float>(Config::Get().windowSize.x));
+    client.localPlayer.position.y = std::clamp(client.localPlayer.position.y, 0.f, static_cast<float>(Config::Get().windowSize.y));
+
+
+    if (sf::Keyboard::isKeyPressed(Config::Get().keys.fire))
     {
-        client.localPlayer.velocity = {0.f, 0.f};
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-            client.localPlayer.velocity.x -= Config::Get().speed;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
-            client.localPlayer.velocity.x += Config::Get().speed;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
-            client.localPlayer.velocity.y -= Config::Get().speed;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
-            client.localPlayer.velocity.y += Config::Get().speed;
+        double now = localTimeNow();
+        double fireInterval = 1.0 / client.localPlayer.fireRate;
 
-        // normaliser la diagonale si besoin
-        if (client.localPlayer.velocity.x != 0.f && client.localPlayer.velocity.y != 0.f)
-            client.localPlayer.velocity /= std::sqrt(2.f);
-
-        if (client.localPlayer.velocity != sf::Vector2f(0, 0))
+        if (now - client.localPlayer.lastShootTime >= fireInterval)
         {
-            client.localPlayer.position += client.localPlayer.velocity * dt;
-            if (client.localPlayer.position.x < 0)
-                client.localPlayer.position.x = client.localPlayer.sprite.getLocalBounds().getCenter().x;
-            if (client.localPlayer.position.x > Config::Get().windowSize.x)
-                client.localPlayer.position.x = Config::Get().windowSize.x - client.localPlayer.sprite.getLocalBounds().getCenter().x;
-            if (client.localPlayer.position.y < 0)
-                client.localPlayer.position.y = client.localPlayer.sprite.getLocalBounds().getCenter().y;
-            if (client.localPlayer.position.y > Config::Get().windowSize.y)
-                client.localPlayer.position.y = Config::Get().windowSize.y - client.localPlayer.sprite.getLocalBounds().getCenter().y;
+            client.sendBullets();
+            client.localPlayer.lastShootTime = now;
         }
     }
+
 }
 
 void Game::handleMenuAction()
@@ -299,7 +309,7 @@ void Game::run()
         // 1. Gestion des events (juste fermeture, menus...)
         handleEvent();
 
-        // 2. Calcul mouvement joueur chaque frame
+        // 2. Calcul mouvement/tir joueur chaque frame
         onPlayerMove(dt);
 
         update(dt);
@@ -325,6 +335,7 @@ void Game::updateGameplay(float dt)
 {
     updateBackgrounds();
     updatePlayers();
+    updateBullets(dt);
 }
 
 void Game::draw(float dt)
@@ -344,11 +355,9 @@ void Game::draw(float dt)
 
 void Game::drawGameplay(sf::RenderWindow &w)
 {
-    int cellWidth = client.localPlayer.sprite.getTexture().getSize().x / 5;
-    int cellHeight = client.localPlayer.sprite.getTexture().getSize().y / 5;
-
     drawBackground();
     drawPlayers();
+    drawBullets();
 }
 
 void Game::updateBackgrounds()
@@ -378,6 +387,7 @@ void Game::updateBackgrounds()
     backgroundVA_1[3].texCoords = {offsetX, offsetY};
     backgroundVA_1[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
     backgroundVA_1[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
+
     offsetX = background_2_OffsetX; // déjà calculé
     offsetY = background_2_OffsetY; // pour vertical
     backgroundVA_2[0].texCoords = {offsetX, offsetY};
@@ -408,16 +418,16 @@ void Game::updatePlayers()
     }
 
     int i = 0;
-    int cellWidth = Config::Get().texture.getSize().x / 5;
-    int cellHeight = Config::Get().texture.getSize().y / 5;
+    int cellWidth = static_cast<int>(Config::Get().playerArea.size.x);
+    int cellHeight = static_cast<int>(Config::Get().playerArea.size.y);
 
     playersVA.resize(client.allPlayers.size() * 6);
 
     for (const auto &[id, p] : client.allPlayers)
     {
 
-        sf::Vector2f origin = client.localPlayer.sprite.getOrigin();
-        sf::Vector2f scale = client.localPlayer.sprite.getScale();
+        sf::Vector2f origin = sf::Vector2f(cellWidth / 2.f, cellHeight / 2.f);
+        sf::Vector2f scale = Config::Get().playerScale;
         float w = static_cast<float>(cellWidth) * scale.x;
         float h = static_cast<float>(cellHeight) * scale.y;
 
@@ -447,6 +457,44 @@ void Game::updatePlayers()
     }
 }
 
+void Game::updateBullets(float dt)
+{
+    // Mise à jour logique
+    for (auto& [id, b] : client.allBullets)
+    {
+        b.update(dt);
+    }
+
+    // Nettoyage
+    std::erase_if(client.allBullets,
+        [](const auto& it) { return !it.second.active; });
+
+    rebuildBulletsVA();
+}
+
+void Game::rebuildBulletsVA()
+{
+    bulletsVA.clear();
+    bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
+
+    for (const auto& [id, b] : client.allBullets)
+    {
+        float w = 10.f;
+        float h = 5.f;
+        float x = b.position.x - w / 2.f;
+        float y = b.position.y - h / 2.f;
+
+        sf::Color color = sf::Color::Cyan;
+
+        bulletsVA.append({{x, y}, color});
+        bulletsVA.append({{x + w, y}, color});
+        bulletsVA.append({{x + w, y + h}, color});
+        bulletsVA.append({{x, y}, color});
+        bulletsVA.append({{x + w, y + h}, color});
+        bulletsVA.append({{x, y + h}, color});
+    }
+}
+
 void Game::drawBackground()
 {
     sf::RenderStates states_1, states_2;
@@ -462,4 +510,14 @@ void Game::drawPlayers()
     sf::RenderStates states;
     states.texture = &Config::Get().texture;
     window.draw(playersVA, states);
+}
+
+void Game::drawBullets()
+{
+    if (bulletsVA.getVertexCount() == 0)
+        return;
+
+    sf::RenderStates states;
+    states.texture = nullptr ; //&Config::Get().texture; // même texture que tes sprites joueurs, ou autre texture pour bullets
+    window.draw(bulletsVA, states);
 }

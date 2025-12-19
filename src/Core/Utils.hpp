@@ -1,4 +1,7 @@
-﻿#include <SFML/Network.hpp>
+﻿#pragma once
+#include <SFML/Network.hpp>
+#include <SFML/Window/Keyboard.hpp>
+#include <SFML/System/String.hpp>
 #include <string>
 
 // std::string getLocalIpAddress()
@@ -14,4 +17,8 @@ static double localTimeNow()
 {
     using namespace std::chrono;
     return duration<double>(steady_clock::now().time_since_epoch()).count();
+}
+static std::string keyToString(sf::Keyboard::Scancode k)
+{
+    return sf::Keyboard::getDescription(k).toAnsiString(); // SFML >= 2.6
 }

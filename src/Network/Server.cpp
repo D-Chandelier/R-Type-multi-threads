@@ -49,6 +49,16 @@ double Server::currentGameTime() const
     return getNowSeconds() - gameStartTime;
 }
 
+RemotePlayer* Server::getPlayerByPeer(ENetPeer* peer)
+{
+    for (auto& [id, player] : allPlayers)
+    {
+        if (player.peer == peer)
+            return &player;
+    }
+    return nullptr;
+}
+
 void Server::broadcastPositions()
 {
     if (allPlayers.empty() || !host)
@@ -70,10 +80,40 @@ void Server::broadcastPositions()
         i++;
     }
 
-    ENetPacket *packet = enet_packet_create(&p, sizeof(ServerPositionPacket), 0);
     for (const auto &[id, player] : allPlayers)
-        if (player.peer)
-            enet_peer_send(player.peer, 0, packet);
+    {
+        if (!player.peer)
+            continue;
+        ENetPacket *packet = enet_packet_create(&p, sizeof(ServerPositionPacket), 0);
+        enet_peer_send(player.peer, 0, packet);
+    }
+}
+
+void Server::broadcastBullets(const ServerBullet& b)
+{
+    ServerBulletPacket p;
+    p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
+    p.header.code = static_cast<uint8_t>(ServerMsg::BULLET_SHOOT);
+
+    p.bulletId = b.id;
+    p.x = b.position.x;
+    p.y = b.position.y;
+    p.velX = b.velocity.x;
+    p.velY = b.velocity.y;
+    p.ownerId = b.ownerId;
+
+    for (auto& [id, player] : allPlayers)
+    {
+        if (!player.peer)
+            continue;
+
+        ENetPacket* pkt = enet_packet_create(
+            &p,
+            sizeof(p),
+            ENET_PACKET_FLAG_RELIABLE
+        );
+        enet_peer_send(player.peer, 0, pkt);
+    }
 }
 
 void Server::sendNewId(ENetEvent event)
@@ -108,6 +148,38 @@ void Server::onReceivePlayerPosition(ENetEvent event)
     it->second.y = std::clamp(p->y, 0.f, static_cast<float>(Config::Get().windowSize.y));
 }
 
+void Server::onReceiveBulletShoot(ENetEvent event)
+{
+    if (event.packet->dataLength != sizeof(ClientBulletPacket))
+        return;
+
+    auto* p = reinterpret_cast<ClientBulletPacket*>(event.packet->data);
+
+    RemotePlayer* shooter = getPlayerByPeer(event.peer); 
+    if (!shooter)
+        return;
+    // if (!canShoot(shooter))
+    //     return;
+
+    sf::Vector2f dir{p->velX, p->velY};
+    float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+    if (len == 0.f)
+        return;
+
+    dir /= len;
+
+    ServerBullet bullet;
+    bullet.id = nextBulletId++;
+    bullet.position = sf::Vector2f(shooter->x, shooter->y); // sf::Vector2f{shooter->serverX, shooter->serverY}; // PAS p->x/p->y
+    bullet.velocity = dir * shooter->bulletSpeed;;
+    bullet.damage = shooter->bulletDamage;
+    bullet.ownerId = shooter->id;
+
+    allBullets.emplace(bullet.id, bullet);
+    broadcastBullets(bullet);
+}
+
+
 void Server::handleTypeConnect(ENetEvent event)
 {
     sendNewId(event);
@@ -125,6 +197,9 @@ void Server::handleTypeReceive(ENetEvent event)
     {
     case static_cast<uint8_t>(ClientMsg::PLAYER_POSITION):
         onReceivePlayerPosition(event);
+        break;
+    case static_cast<uint8_t>(ClientMsg::BULLET_SHOOT):
+        onReceiveBulletShoot(event);
         break;
     default:
         return;
@@ -180,6 +255,7 @@ void Server::update(float dt)
     while (positionAccumulator >= SERVER_TICK)
     {
         broadcastPositions();
+        // broadcastBullets();
         positionAccumulator -= SERVER_TICK;
     }
 }

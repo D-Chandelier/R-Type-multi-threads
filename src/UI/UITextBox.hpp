@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "../Core/Config.hpp"
+#include "../Core/Utils.hpp"
 
 #undef min
 #undef max
@@ -18,7 +19,8 @@ enum class UITextBoxType
 {
     PORT,
     IP,
-    TEXT
+    TEXT,
+    KEY
 };
 struct UITextBox
 {
@@ -47,6 +49,9 @@ struct UITextBox
     // Curseur
     bool cursorVisible = true;
     float cursorTimer = 0.f;
+
+    // KeyCode
+    sf::Keyboard::Scancode scancodeKey = sf::Keyboard::Scancode::Unknown; // touche enregistrée
 
     UITextBox(const sf::Font &font) : type(UITextBoxType::TEXT),
                                       width(200),
@@ -90,6 +95,7 @@ struct UITextBox
         box.setSize({width, height});
         updateLayout();
     }
+    
     void setWidth(float w)
     {
         width = w;
@@ -185,6 +191,16 @@ struct UITextBox
         if (!focused)
             return;
 
+            // --- KEY BINDING ---
+        if (type == UITextBoxType::KEY)
+        {
+            if (auto *k = e.getIf<sf::Event::KeyPressed>())
+            {
+                handleKey(k->scancode);
+            }
+            return; // IMPORTANT : on ne traite rien d'autre
+        }
+
         if (auto *t = e.getIf<sf::Event::TextEntered>())
         {
             char c = static_cast<char>(t->unicode);
@@ -238,17 +254,22 @@ private:
         }
         else
         { // Label à gauche
-            totalSize.x = labelWidth + labelSpacing + width;
+            // totalSize.x = labelWidth + labelSpacing + width;
+            totalSize.x = labelSpacing + width;
             totalSize.y = std::max(labelHeight, height);
 
             // Label
+            //label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
             label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
-            label.setPosition({position.x - origin.x,
-                               position.y - origin.y + totalSize.y * 0.5f});
+            // label.setPosition({position.x - origin.x - labelSpacing,
+            //                    position.y - origin.y + totalSize.y * 0.5f});
+
+            label.setPosition({position.x - labelSpacing / 2.f + width,
+                               position.y + totalSize.y * 0.5f});
 
             // Box
             box.setOrigin({width * 0.5f, height * 0.5f});
-            box.setPosition({position.x - origin.x + labelWidth + labelSpacing + width * 0.5f,
+            box.setPosition({position.x - origin.x + labelSpacing + width * 0.5f,
                              position.y - origin.y + totalSize.y * 0.5f});
         }
 
@@ -330,6 +351,17 @@ private:
         }
         else if (c == 8 && !value.empty())
             value.pop_back();
+    }
+
+    void handleKey(sf::Keyboard::Scancode sc)
+    {
+        // Convertir la Key en Scancode puis en string
+        //sf::Keyboard::Scancode sc = sf::Keyboard::keyToScancode(k);
+        value = keyToString(sc);
+        scancodeKey = sc;
+        updateLayout();
+        focused = false;    
+        
     }
 
     void handleFreeText(char c)

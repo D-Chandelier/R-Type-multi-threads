@@ -3,6 +3,8 @@
 #include "IMenu.hpp"
 #include "../UI/UITextBox.hpp"
 #include "../UI/UIButton.hpp"
+#include "Utils.hpp"
+
 class MenuOption : public IMenu
 {
 
@@ -20,7 +22,7 @@ private:
     sf::Text title;
 
     sf::Text portLabel;
-    UITextBox tbPort;
+    UITextBox tbPort, tbKeyUp, tbKeyDown, tbKeyLeft, tbKeyRight, tbKeyFire;
     sf::Text portDesc;
 
     UIButton quit;

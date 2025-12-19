@@ -28,8 +28,11 @@ public:
     void updateGameplay(float dt);
     void updateBackgrounds();
     void updatePlayers();
+    void updateBullets(float dt);
+    void rebuildBulletsVA();
     void drawBackground();
     void drawPlayers();
+    void drawBullets();
 
 private:
     sf::RenderWindow window;
@@ -51,10 +54,12 @@ private:
     GameState state = GameState::MENU_MAIN;
 
     sf::Texture backgroundTexture1, backgroundTexture2;
-    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA;
+    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA, bulletsVA;
 
     double background_1_OffsetX = 0.0;
     double background_1_OffsetY = 0.0;
     double background_2_OffsetX = 0.0;
     double background_2_OffsetY = 0.0;
+
+    // std::vector<Bullet> receivedBullets;
 };

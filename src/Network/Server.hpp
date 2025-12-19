@@ -8,11 +8,13 @@
 #include <sstream>
 #include <cstring>
 #include <algorithm>
+#include <cmath>
 
 #include "../Core/Config.hpp"
 
-#include "Packets/Messages.hpp"
+#include "Packets/Packets.hpp"
 #include "../Entities/RemotePlayers.hpp"
+#include "../Entities/Bullet.hpp"
 #include "NetworkDiscovery.hpp"
 
 class Server
@@ -31,11 +33,14 @@ public:
     void handleTypeDisconnect(ENetEvent event);
     void sendNewId(ENetEvent event);
     void onReceivePlayerPosition(ENetEvent event);
+    void onReceiveBulletShoot(ENetEvent event);
 
     static double getNowSeconds();
     double currentGameTime() const;
-    void broadcastPositions(); // envoie positions à tous les clients
+    RemotePlayer* getPlayerByPeer(ENetPeer* peer);
 
+    void broadcastPositions(); // envoie positions à tous les clients
+    void broadcastBullets(const ServerBullet& b);   // envoie les tirs à tous les clients
     int findFreePlayerId();
     std::atomic_bool serverReady = false;
 
@@ -43,6 +48,11 @@ private:
     ENetHost *host = nullptr;
     std::mutex mtx; // protège players
     std::map<int, RemotePlayer> allPlayers;
+    //std::vector<Bullet> allBullets = {};
+    std::unordered_map<uint32_t, ServerBullet> allBullets;
+    uint32_t nextBulletId = 1;
+
+    //std::mutex bulletsMutex;
 
     double gameStartTime = 0.0;
     float positionAccumulator = 0.0f;                         // temps écoulé depuis dernier broadcast

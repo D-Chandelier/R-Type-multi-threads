@@ -5,6 +5,15 @@
 
 constexpr float BACKGROUND_SCROLL_SPEED = 20.f;
 
+struct KeyBindings
+{
+    sf::Keyboard::Key up    = sf::Keyboard::Key::Up;//sf::Keyboard::Key::Up;
+    sf::Keyboard::Key down  = sf::Keyboard::Key::Down;
+    sf::Keyboard::Key left  = sf::Keyboard::Key::Left;
+    sf::Keyboard::Key right = sf::Keyboard::Key::Right;
+    sf::Keyboard::Key fire  = sf::Keyboard::Key::LControl;
+};
+
 class Config
 {
 public:
@@ -27,6 +36,8 @@ public:
     sf::Color hoverColor = sf::Color(255, 200, 0); // Jaune
     sf::Font font;
 
+    KeyBindings keys;
+
     uint32_t id = 0;
     std::string playerName = "001";
     std::string serverIp = "127.0.0.1";
@@ -38,6 +49,10 @@ public:
     uint32_t frameRate = 120; // FPS / Hz
 
     sf::Texture texture;
+    sf::Vector2f playerScale = {2.f, 2.f};
+    sf::FloatRect playerArea;
+
+    sf::FloatRect gameArea;
 
 private:
     Config()
@@ -46,5 +61,8 @@ private:
             std::cerr << "[CONFIG] Impossible de charger la font\n";
         if (!texture.loadFromFile("assets/r-typesheet42.gif"))
             std::cerr << "[CONFIG] Impossible de charger r-typesheet42.gif\n";
+
+        playerArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(texture.getSize().x / 5), static_cast<float>(texture.getSize().y / 5)}};
+        gameArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(windowSize.x), static_cast<float>(windowSize.y)}};
     }
 };

@@ -9,10 +9,11 @@
 
 #include "../Core/Config.hpp"
 
-#include "Packets/Messages.hpp"
+#include "Packets/Packets.hpp"
 
 #include "../Entities/RemotePlayers.hpp"
 #include "../Entities/Player.hpp"
+#include "../Entities/Bullet.hpp"
 #include "NetworkDiscovery.hpp"
 
 enum class ClientState
@@ -41,8 +42,10 @@ public:
 
     void eventReceiveId(ENetEvent event);
     void eventReceivePlayersPositions(ENetEvent event);
+    void eventReceiveBullets(ENetEvent event);
 
     void sendPosition();
+    void sendBullets();
 
     double localTimeNow() const;
     ClientState getState() const { return ConnexionState; }
@@ -52,6 +55,7 @@ public:
 
     Player localPlayer;
     std::map<int, RemotePlayer> allPlayers;
+    std::unordered_map<uint32_t, Bullet> allBullets;
 
     double serverTimeOffset;
     double backgroundScrollSpeed;

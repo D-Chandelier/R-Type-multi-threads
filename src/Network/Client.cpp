@@ -3,55 +3,7 @@
 Client::Client()
     : clientHost(nullptr),
       peer(nullptr),
-      ConnexionState(ClientState::DISCONNECTED)
-{
-    // localPlayer.sprite.setTexture(Config::Get().texture);
-
-    // // Taille d'une cellule
-    // int cellWidth = localPlayer.sprite.getTexture().getSize().x / 5;
-    // int cellHeight = localPlayer.sprite.getTexture().getSize().y / 5;
-    // localPlayer.sprite.setTextureRect(sf::IntRect(
-    //     {2 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}));
-
-    // if (!backgroundTexture1.loadFromFile("assets/Starfield_07-1024x1024.png"))
-    // {
-    //     std::cerr << "Erreur chargement texture background 1\n";
-    // }
-    // backgroundTexture1.setRepeated(true); // optionnel mais propre
-    // if (!backgroundTexture2.loadFromFile("assets/Blue_Nebula_08-1024x1024.png"))
-    // {
-    //     std::cerr << "Erreur chargement texture background 2\n";
-    // }
-    // backgroundTexture2.setRepeated(true);
-
-    // playersVA.setPrimitiveType(sf::PrimitiveType::Triangles);
-    // playersVA.resize(6 * Config::Get().maxPlayers);
-
-    // backgroundVA_1.setPrimitiveType(sf::PrimitiveType::Triangles);
-    // backgroundVA_1.resize(6); // 2 triangles
-    // backgroundVA_2.setPrimitiveType(sf::PrimitiveType::Triangles);
-    // backgroundVA_2.resize(6); // 2 triangles
-
-    // // Définir positions fixes de l'écran
-    // float w = static_cast<float>(Config::Get().windowSize.x);
-    // float h = static_cast<float>(Config::Get().windowSize.y);
-
-    // // 1er triangle
-    // backgroundVA_1[0].position = {0.f, 0.f};
-    // backgroundVA_1[1].position = {w, 0.f};
-    // backgroundVA_1[2].position = {w, h};
-    // backgroundVA_2[0].position = {0.f, 0.f};
-    // backgroundVA_2[1].position = {w, 0.f};
-    // backgroundVA_2[2].position = {w, h};
-
-    // // 2e triangle
-    // backgroundVA_1[3].position = {0.f, 0.f};
-    // backgroundVA_1[4].position = {w, h};
-    // backgroundVA_1[5].position = {0.f, h};
-    // backgroundVA_2[3].position = {0.f, 0.f};
-    // backgroundVA_2[4].position = {w, h};
-    // backgroundVA_2[5].position = {0.f, h};
-}
+      ConnexionState(ClientState::DISCONNECTED) {}
 
 Client::~Client() { stop(); }
 
@@ -140,6 +92,26 @@ void Client::eventReceivePlayersPositions(ENetEvent event)
     backgroundScrollSpeed = p->scrollSpeed;
 }
 
+void Client::eventReceiveBullets(ENetEvent event)
+{
+    if (event.packet->dataLength != sizeof(ServerBulletPacket))
+        return;
+
+    auto* p = reinterpret_cast<ServerBulletPacket*>(event.packet->data);
+
+    // Anti-duplication (important)
+    if (allBullets.contains(p->bulletId))
+        return;
+
+    Bullet b;
+    b.id = p->bulletId;
+    b.position = {p->x, p->y};
+    b.velocity = {p->velX, p->velY};
+    b.ownerId = p->ownerId;
+
+    allBullets.emplace(b.id, b);
+}
+
 void Client::eventReceiveId(ENetEvent event)
 {
     if (event.packet->dataLength != sizeof(ServerAssignIdPacket))
@@ -194,6 +166,9 @@ void Client::handleTypeReceive(ENetEvent event)
             case static_cast<uint8_t>(ServerMsg::PLAYER_POSITION):
                 eventReceivePlayersPositions(event);
                 break;
+            case static_cast<uint8_t>(ServerMsg::BULLET_SHOOT):
+                eventReceiveBullets(event);
+                break;
             default:
                 return;
             }
@@ -238,6 +213,7 @@ void Client::update(float dt)
     std::lock_guard<std::mutex> lock(mtx);
     handleEnetService();
     sendPosition();
+    // sendBullets();
 }
 
 void Client::sendPosition()
@@ -250,8 +226,8 @@ void Client::sendPosition()
     {
 
         // Clamp pour ne pas sortir de l'écran
-        float halfW = localPlayer.sprite.getLocalBounds().getCenter().x * localPlayer.sprite.getScale().x;
-        float halfH = localPlayer.sprite.getLocalBounds().getCenter().y * localPlayer.sprite.getScale().y;
+        float halfW = Config::Get().playerArea.getCenter().x * Config::Get().playerScale.x;
+        float halfH = Config::Get().playerArea.getCenter().y * Config::Get().playerScale.y;
 
         localPlayer.position.x = std::clamp(
             localPlayer.position.x,
@@ -269,6 +245,28 @@ void Client::sendPosition()
         p.y = localPlayer.position.y;
 
         ENetPacket *packet = enet_packet_create(&p, sizeof(p), 0);
+        enet_peer_send(peer, 0, packet);
+    }
+}
+
+void Client::sendBullets()
+{
+    // envoyer la position au serveur
+    if (localPlayer.id < 0 || localPlayer.id > Config::Get().maxPlayers)
+        return;
+
+    if (peer)
+    {
+        ClientBulletPacket p;
+        p.header.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
+        p.header.code = static_cast<uint8_t>(ClientMsg::BULLET_SHOOT);
+        p.ownerId = localPlayer.id;
+        p.x = localPlayer.position.x;
+        p.y = localPlayer.position.y;
+        p.velX = 1.f;
+        p.velY = 0.f;
+
+        ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE); // Un tir ne doit jamais être perdu.
         enet_peer_send(peer, 0, packet);
     }
 }
