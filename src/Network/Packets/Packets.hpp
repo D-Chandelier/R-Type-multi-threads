@@ -27,7 +27,9 @@ enum class ServerMsg : uint8_t
     START_GAME,
     PLAYER_POSITION,
     BACKGROUND_STATE,
-    BULLET_SHOOT
+    BULLET_SHOOT,
+    INIT_LEVEL,
+    WORLD_X_UPDATE
 };
 
 ///////////////////////////////////////////////////////:
@@ -96,6 +98,23 @@ struct ServerBulletPacket
     float x, y;
     float velX, velY;
     uint8_t ownerId;
+};
+
+struct InitLevelPacket
+{
+    PacketHeader header; // code=INIT_LEVEL
+    uint32_t seed;       // seed terrain
+    float worldX;        // position monde actuelle
+    float scrollSpeed;   // vitesse monde
+    float lookahead;     // SERVER_LOOKAHEAD
+    float cleanupMargin; // SERVER_CLEANUP_MARGIN
+};
+struct WorldStatePacket
+{
+    PacketHeader header;   // code=INIT_LEVEL
+    uint32_t seed;         // seed terrain
+    float worldX;          // position monde actuelle
+    double serverGameTime; // temps serveur actuel
 };
 
 #pragma pack(pop)

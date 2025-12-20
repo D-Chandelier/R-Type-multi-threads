@@ -1,6 +1,10 @@
 ﻿#include "Server.hpp"
 
-Server::Server() : host(nullptr), positionAccumulator(0.0) {}
+Server::Server() : host(nullptr), positionAccumulator(0.0), lookahead(), cleanupMargin()
+{
+    lookahead = 3.f * Config::Get().windowSize.x;
+    cleanupMargin = 2.f * Config::Get().windowSize.x;
+}
 
 Server::~Server() { stop(); }
 
@@ -23,6 +27,12 @@ bool Server::start(uint16_t port)
     gameStartTime = getNowSeconds();
     std::cout << "[Server] started on port " << port << "at " << gameStartTime << "\n";
     serverReady = true;
+
+    levelSeed = std::random_device{}();
+    levelTick = 0;
+    worldX = 0.f;
+    terrain.init(levelSeed);
+    terrain.update(worldX);
 
     return true;
 }
@@ -49,14 +59,29 @@ double Server::currentGameTime() const
     return getNowSeconds() - gameStartTime;
 }
 
-RemotePlayer* Server::getPlayerByPeer(ENetPeer* peer)
+RemotePlayer *Server::getPlayerByPeer(ENetPeer *peer)
 {
-    for (auto& [id, player] : allPlayers)
+    for (auto &[id, player] : allPlayers)
     {
         if (player.peer == peer)
             return &player;
     }
     return nullptr;
+}
+
+void Server::sendLevel(ENetPeer *peer)
+{
+    InitLevelPacket pkt;
+    pkt.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
+    pkt.header.code = static_cast<uint8_t>(ServerMsg::INIT_LEVEL);
+    pkt.seed = levelSeed;
+    pkt.worldX = worldX; // position monde actuelle
+    pkt.scrollSpeed = LEVEL_SCROLL_SPEED;
+    pkt.lookahead = lookahead;
+    pkt.cleanupMargin = cleanupMargin;
+
+    ENetPacket *packet = enet_packet_create(&pkt, sizeof(InitLevelPacket), ENET_PACKET_FLAG_RELIABLE);
+    enet_peer_send(peer, 0, packet);
 }
 
 void Server::broadcastPositions()
@@ -89,7 +114,7 @@ void Server::broadcastPositions()
     }
 }
 
-void Server::broadcastBullets(const ServerBullet& b)
+void Server::broadcastBullets(const ServerBullet &b)
 {
     ServerBulletPacket p;
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
@@ -102,17 +127,37 @@ void Server::broadcastBullets(const ServerBullet& b)
     p.velY = b.velocity.y;
     p.ownerId = b.ownerId;
 
-    for (auto& [id, player] : allPlayers)
+    for (auto &[id, player] : allPlayers)
     {
         if (!player.peer)
             continue;
 
-        ENetPacket* pkt = enet_packet_create(
+        ENetPacket *pkt = enet_packet_create(
             &p,
             sizeof(p),
-            ENET_PACKET_FLAG_RELIABLE
-        );
+            ENET_PACKET_FLAG_RELIABLE);
         enet_peer_send(player.peer, 0, pkt);
+    }
+}
+
+void Server::broadcastWorldX()
+{
+    if (allPlayers.empty() || !host)
+        return; // rien à broadcast
+
+    WorldStatePacket p;
+    p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
+    p.header.code = static_cast<uint8_t>(ServerMsg::WORLD_X_UPDATE); // Assurez-vous que ce code existe dans votre enum ServerMsg
+    p.worldX = worldX;
+    p.serverGameTime = currentGameTime();
+
+    // Envoi du paquet à tous les joueurs connectés
+    for (const auto &[id, player] : allPlayers)
+    {
+        if (!player.peer)
+            continue;
+        ENetPacket *packet = enet_packet_create(&p, sizeof(WorldStatePacket), 0);
+        enet_peer_send(player.peer, 0, packet);
     }
 }
 
@@ -134,6 +179,8 @@ void Server::sendNewId(ENetEvent event)
 
     ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE);
     enet_peer_send(event.peer, 0, packet);
+
+    sendLevel(event.peer);
 };
 
 void Server::onReceivePlayerPosition(ENetEvent event)
@@ -153,9 +200,9 @@ void Server::onReceiveBulletShoot(ENetEvent event)
     if (event.packet->dataLength != sizeof(ClientBulletPacket))
         return;
 
-    auto* p = reinterpret_cast<ClientBulletPacket*>(event.packet->data);
+    auto *p = reinterpret_cast<ClientBulletPacket *>(event.packet->data);
 
-    RemotePlayer* shooter = getPlayerByPeer(event.peer); 
+    RemotePlayer *shooter = getPlayerByPeer(event.peer);
     if (!shooter)
         return;
     // if (!canShoot(shooter))
@@ -171,14 +218,14 @@ void Server::onReceiveBulletShoot(ENetEvent event)
     ServerBullet bullet;
     bullet.id = nextBulletId++;
     bullet.position = sf::Vector2f(shooter->x, shooter->y); // sf::Vector2f{shooter->serverX, shooter->serverY}; // PAS p->x/p->y
-    bullet.velocity = dir * shooter->bulletSpeed;;
+    bullet.velocity = dir * shooter->bulletSpeed;
+    ;
     bullet.damage = shooter->bulletDamage;
     bullet.ownerId = shooter->id;
 
     allBullets.emplace(bullet.id, bullet);
     broadcastBullets(bullet);
 }
-
 
 void Server::handleTypeConnect(ENetEvent event)
 {
@@ -252,11 +299,16 @@ void Server::update(float dt)
     handleEnetService();
 
     positionAccumulator += dt;
+
     while (positionAccumulator >= SERVER_TICK)
     {
-        broadcastPositions();
-        // broadcastBullets();
         positionAccumulator -= SERVER_TICK;
+        levelTick++;
+        worldX += LEVEL_SCROLL_SPEED * SERVER_TICK;
+
+        terrain.update(worldX);
+        broadcastWorldX();
+        broadcastPositions();
     }
 }
 

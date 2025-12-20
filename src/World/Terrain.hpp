@@ -1,0 +1,33 @@
+﻿#pragma once
+#include <SFML/Graphics.hpp>
+#include "../Core/Config.hpp"
+#include "Segments.hpp"
+#include <deque>
+#include <random>
+
+class Terrain
+{
+public:
+    Terrain();
+
+    void init(uint32_t seed);
+    void update(float worldX);
+    void draw(sf::RenderWindow &win);
+
+    bool collides(const sf::FloatRect &box) const;
+
+    uint32_t levelSeed;
+    uint32_t serverTick;
+    float backgroundScrollSpeed;
+    float lookahead;
+    float cleanupMargin;
+    float worldX;
+
+private:
+    void generateNextSegment();
+    void generateNextSegmentAt(float startX);
+
+    std::mt19937 rng;
+    std::deque<TerrainSegment> segments;
+    float nextSegmentX;
+};

@@ -12,6 +12,8 @@ struct DiscoveredServer
 {
     std::string ip;
     uint16_t port;
+    // uint16_t nbPlayers;
+    // uint16_t maxPlayers;
 
     bool operator==(const DiscoveredServer &other) const
     {

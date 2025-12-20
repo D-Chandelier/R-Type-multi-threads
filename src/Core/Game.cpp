@@ -9,7 +9,8 @@ Game::Game()
       menuServers(client, discoveryClient),
       menuOption(),
       menuInGame(),
-      menuBackground(Config::Get().font)
+      menuBackground(Config::Get().font) //,
+// terrain()
 {
     currentMenu = &menuMain;
 
@@ -164,17 +165,21 @@ void Game::onPlayerMove(float dt)
         return;
 
     // --- Mouvement ---
-    bool left  = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
+    bool left = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
     bool right = sf::Keyboard::isKeyPressed(Config::Get().keys.right);
-    bool up    = sf::Keyboard::isKeyPressed(Config::Get().keys.up);
-    bool down  = sf::Keyboard::isKeyPressed(Config::Get().keys.down);
+    bool up = sf::Keyboard::isKeyPressed(Config::Get().keys.up);
+    bool down = sf::Keyboard::isKeyPressed(Config::Get().keys.down);
 
     sf::Vector2f vel{0.f, 0.f};
 
-    if (left && !right)  vel.x = -Config::Get().speed;
-    if (right && !left)  vel.x =  Config::Get().speed;
-    if (up && !down)     vel.y = -Config::Get().speed;
-    if (down && !up)     vel.y =  Config::Get().speed;
+    if (left && !right)
+        vel.x = -Config::Get().speed;
+    if (right && !left)
+        vel.x = Config::Get().speed;
+    if (up && !down)
+        vel.y = -Config::Get().speed;
+    if (down && !up)
+        vel.y = Config::Get().speed;
 
     // normaliser diagonale
     if (vel.x != 0.f && vel.y != 0.f)
@@ -183,11 +188,10 @@ void Game::onPlayerMove(float dt)
     client.localPlayer.velocity = vel;
     client.localPlayer.position.x += vel.x * dt;
     client.localPlayer.position.y += vel.y * dt;
-    
+
     // clamp dans la fenêtre
     client.localPlayer.position.x = std::clamp(client.localPlayer.position.x, 0.f, static_cast<float>(Config::Get().windowSize.x));
     client.localPlayer.position.y = std::clamp(client.localPlayer.position.y, 0.f, static_cast<float>(Config::Get().windowSize.y));
-
 
     if (sf::Keyboard::isKeyPressed(Config::Get().keys.fire))
     {
@@ -200,7 +204,6 @@ void Game::onPlayerMove(float dt)
             client.localPlayer.lastShootTime = now;
         }
     }
-
 }
 
 void Game::handleMenuAction()
@@ -334,30 +337,9 @@ void Game::update(float dt)
 void Game::updateGameplay(float dt)
 {
     updateBackgrounds();
+    updateTerrain();
     updatePlayers();
     updateBullets(dt);
-}
-
-void Game::draw(float dt)
-{
-    window.clear(Config::Get().backgroundColor);
-
-    if (state != GameState::IN_GAME)
-    {
-        menuBackground.draw(window);
-        currentMenu->draw(window);
-    }
-    else
-        drawGameplay(window);
-
-    window.display();
-}
-
-void Game::drawGameplay(sf::RenderWindow &w)
-{
-    drawBackground();
-    drawPlayers();
-    drawBullets();
 }
 
 void Game::updateBackgrounds()
@@ -403,6 +385,17 @@ void Game::updateBackgrounds()
         backgroundVA_2[i].color = alphaColor; // 50% transparent
 }
 
+void Game::updateTerrain()
+{
+    // Temps écoulé depuis la dernière position serveur
+    double delta = localTimeNow() - client.serverGameTime;
+    // Interpolation simple
+    float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
+    alpha = std::clamp(alpha, 0.f, 1.f);
+
+    client.terrain.worldX += (client.targetWorldX - client.terrain.worldX) * alpha;
+    client.terrain.update(client.terrain.worldX);
+}
 void Game::updatePlayers()
 {
     for (auto &[id, p] : client.allPlayers)
@@ -460,14 +453,15 @@ void Game::updatePlayers()
 void Game::updateBullets(float dt)
 {
     // Mise à jour logique
-    for (auto& [id, b] : client.allBullets)
+    for (auto &[id, b] : client.allBullets)
     {
         b.update(dt);
     }
 
     // Nettoyage
     std::erase_if(client.allBullets,
-        [](const auto& it) { return !it.second.active; });
+                  [](const auto &it)
+                  { return !it.second.active; });
 
     rebuildBulletsVA();
 }
@@ -477,7 +471,7 @@ void Game::rebuildBulletsVA()
     bulletsVA.clear();
     bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
 
-    for (const auto& [id, b] : client.allBullets)
+    for (const auto &[id, b] : client.allBullets)
     {
         float w = 10.f;
         float h = 5.f;
@@ -493,6 +487,29 @@ void Game::rebuildBulletsVA()
         bulletsVA.append({{x + w, y + h}, color});
         bulletsVA.append({{x, y + h}, color});
     }
+}
+
+void Game::draw(float dt)
+{
+    window.clear(Config::Get().backgroundColor);
+
+    if (state != GameState::IN_GAME)
+    {
+        menuBackground.draw(window);
+        currentMenu->draw(window);
+    }
+    else
+        drawGameplay(window);
+
+    window.display();
+}
+
+void Game::drawGameplay(sf::RenderWindow &w)
+{
+    drawBackground();
+    client.terrain.draw(w);
+    drawPlayers();
+    drawBullets();
 }
 
 void Game::drawBackground()
@@ -518,6 +535,6 @@ void Game::drawBullets()
         return;
 
     sf::RenderStates states;
-    states.texture = nullptr ; //&Config::Get().texture; // même texture que tes sprites joueurs, ou autre texture pour bullets
+    states.texture = nullptr; //&Config::Get().texture; // même texture que tes sprites joueurs, ou autre texture pour bullets
     window.draw(bulletsVA, states);
 }

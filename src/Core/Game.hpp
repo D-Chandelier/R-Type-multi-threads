@@ -11,6 +11,8 @@
 #include "../Network/Client.hpp"
 #include "../Network/Server.hpp"
 #include "../Network/NetworkDiscovery.hpp"
+#include "../World/Terrain.hpp"
+
 #include "Utils.hpp"
 
 class Game
@@ -27,6 +29,7 @@ public:
     void onPlayerMove(float dt);
     void updateGameplay(float dt);
     void updateBackgrounds();
+    void updateTerrain();
     void updatePlayers();
     void updateBullets(float dt);
     void rebuildBulletsVA();
@@ -61,5 +64,5 @@ private:
     double background_2_OffsetX = 0.0;
     double background_2_OffsetY = 0.0;
 
-    // std::vector<Bullet> receivedBullets;
+    // Terrain terrain;
 };

@@ -3,7 +3,8 @@
 Client::Client()
     : clientHost(nullptr),
       peer(nullptr),
-      ConnexionState(ClientState::DISCONNECTED) {}
+      ConnexionState(ClientState::DISCONNECTED),
+      terrain() {}
 
 Client::~Client() { stop(); }
 
@@ -97,7 +98,7 @@ void Client::eventReceiveBullets(ENetEvent event)
     if (event.packet->dataLength != sizeof(ServerBulletPacket))
         return;
 
-    auto* p = reinterpret_cast<ServerBulletPacket*>(event.packet->data);
+    auto *p = reinterpret_cast<ServerBulletPacket *>(event.packet->data);
 
     // Anti-duplication (important)
     if (allBullets.contains(p->bulletId))
@@ -150,6 +151,41 @@ void Client::handleTypeConnect(ENetEvent event)
     enet_peer_send(peer, 0, packet);
 }
 
+void Client::eventReceiveInitLevel(ENetEvent event)
+{
+    if (event.packet->dataLength != sizeof(InitLevelPacket))
+        return;
+
+    auto *p = reinterpret_cast<InitLevelPacket *>(event.packet->data);
+
+    terrain.levelSeed = p->seed;
+    terrain.worldX = p->worldX;
+    terrain.backgroundScrollSpeed = p->scrollSpeed;
+    terrain.lookahead = p->lookahead;
+    terrain.cleanupMargin = p->cleanupMargin;
+
+    std::cout << "[Client] received INIT_LEVEL: seed=" << terrain.levelSeed
+              << " worldX=" << terrain.worldX
+              << " scrollSpeed=" << terrain.backgroundScrollSpeed
+              << " lookahead=" << terrain.lookahead
+              << " cleanupMargin=" << terrain.cleanupMargin
+              << "\n";
+    terrain.init(p->seed);
+    terrain.update(terrain.worldX);
+}
+
+void Client::eventReceiveWorldX(ENetEvent event)
+{
+    if (event.packet->dataLength != sizeof(WorldStatePacket))
+        return;
+
+    auto *p = reinterpret_cast<WorldStatePacket *>(event.packet->data);
+
+    targetWorldX = p->worldX;
+    serverGameTime = p->serverGameTime;
+    // std::cout << "[Client] received WORLD_X_UPDATE: worldX=" << targetWorldX << "\n";
+}
+
 void Client::handleTypeReceive(ENetEvent event)
 {
     if (event.packet)
@@ -168,6 +204,12 @@ void Client::handleTypeReceive(ENetEvent event)
                 break;
             case static_cast<uint8_t>(ServerMsg::BULLET_SHOOT):
                 eventReceiveBullets(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::INIT_LEVEL):
+                eventReceiveInitLevel(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::WORLD_X_UPDATE):
+                eventReceiveWorldX(event);
                 break;
             default:
                 return;
@@ -213,7 +255,9 @@ void Client::update(float dt)
     std::lock_guard<std::mutex> lock(mtx);
     handleEnetService();
     sendPosition();
-    // sendBullets();
+    // renderWorldX += (targetWorldX - renderWorldX) * 0.1f;
+    // terrain.update(renderWorldX);
+    // terrain.update(targetWorldX);
 }
 
 void Client::sendPosition()

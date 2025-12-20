@@ -8,7 +8,7 @@
 #include <atomic>
 
 #include "../Core/Config.hpp"
-
+#include "../World/Terrain.hpp"
 #include "Packets/Packets.hpp"
 
 #include "../Entities/RemotePlayers.hpp"
@@ -43,6 +43,8 @@ public:
     void eventReceiveId(ENetEvent event);
     void eventReceivePlayersPositions(ENetEvent event);
     void eventReceiveBullets(ENetEvent event);
+    void eventReceiveInitLevel(ENetEvent event);
+    void eventReceiveWorldX(ENetEvent event);
 
     void sendPosition();
     void sendBullets();
@@ -57,8 +59,13 @@ public:
     std::map<int, RemotePlayer> allPlayers;
     std::unordered_map<uint32_t, Bullet> allBullets;
 
+    Terrain terrain;
     double serverTimeOffset;
     double backgroundScrollSpeed;
+    float targetWorldX;
+    float renderWorldX;
+
+    double serverGameTime;
 
 private:
     std::mutex mtx;

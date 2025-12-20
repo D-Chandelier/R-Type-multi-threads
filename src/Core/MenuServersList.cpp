@@ -25,25 +25,27 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     // TextBox IP
     tbIp.setText(Config::Get().serverIp);
     tbIp.setLabel("Adresse IP :");
-    tbIp.setLabelSpacing(10.f);
+    tbIp.setLabelSpacing(300.f);
     tbPort.setMode(UITextBoxMode::LEFT);
-    tbIp.setWidth(320);
+    tbIp.setWidth(220);
     tbIp.setType(UITextBoxType::IP);
+    tbIp.setPosition({cx - 20 - tbIp.getSize().x / 2.f, cy * 6.5f});
 
     // TextBox Port
     tbPort.setText(std::to_string(Config::Get().serverPort));
     tbPort.setLabel("Port :");
-    tbPort.setLabelSpacing(10.f);
+    tbPort.setLabelSpacing(300.f);
     tbPort.setMode(UITextBoxMode::LEFT);
     tbPort.setWidth(120);
     tbPort.setType(UITextBoxType::PORT);
+    tbPort.setPosition({cx + 30.f - tbPort.getSize().x / 2.f, cy * 7});
 
-    float spacing = 10.f;
-    float totalWidth = tbIp.getSize().x + spacing + tbPort.getSize().x;
-    float startX = cx - (totalWidth / 2);
-    float y = cy * 8;
-    tbIp.setPosition({startX, y - tbIp.getSize().y / 2});
-    tbPort.setPosition({startX + tbIp.getSize().x + spacing, y - tbPort.getSize().y / 2});
+    // float spacing = 10.f;
+    // float totalWidth = tbIp.getSize().x + spacing + tbPort.getSize().x;
+    // float startX = cx - (totalWidth / 2);
+    // float y = cy * 8;
+    // tbIp.setPosition({startX, y - tbIp.getSize().y / 2});
+    // tbPort.setPosition({startX + tbIp.getSize().x + spacing, y - tbPort.getSize().y / 2});
 
     // Bouton TEST
     buttonTest.setTexture("./assets/bt.png");
@@ -59,8 +61,9 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
 
     buttonTest.setFont(Config::Get().font);
     buttonTest.setText("Try", 24, sf::Color::Black);
-    buttonTest.setSize({100, 28});
-    buttonTest.setPosition({tbPort.getPosition().x + tbPort.getSize().x + 20, y - buttonTest.getSize().y / 2});
+    buttonTest.setSize({200, 28});
+    buttonTest.setPosition({cx - buttonTest.getSize().x / 2.f, cy * 8});
+    // buttonTest.setPosition({tbPort.getPosition().x + tbPort.getSize().x + 20, y - buttonTest.getSize().y / 2});
     buttonTest.onClickCallback([this]()
                                { this->buttonTest_Click(); });
 
