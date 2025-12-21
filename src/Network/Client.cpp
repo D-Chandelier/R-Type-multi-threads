@@ -58,6 +58,26 @@ void Client::stop()
     }
 }
 
+void Client::onReceiveSegment(ENetEvent &event)
+{
+    if (event.packet->dataLength != sizeof(ServerSegmentPacket))
+        return;
+
+    auto *p = reinterpret_cast<ServerSegmentPacket *>(event.packet->data);
+
+    TerrainSegment seg;
+    seg.type = static_cast<SegmentType>(p->type);
+    seg.startX = p->startX;
+
+    for (int i = 0; i < p->blockCount; ++i)
+    {
+        const auto &b = p->blocks[i];
+        seg.blocks.emplace_back(sf::FloatRect{{b.x, b.y}, {b.w, b.h}});
+    }
+
+    terrain.segments.push_back(seg);
+}
+
 void Client::eventReceivePlayersPositions(ENetEvent event)
 {
     if (event.packet->dataLength != sizeof(ServerPositionPacket))
@@ -76,14 +96,18 @@ void Client::eventReceivePlayersPositions(ENetEvent event)
         RemotePlayer &rp = allPlayers[pid];
         rp.id = pid;
         rp.lastUpdateTime = p->serverGameTime;
-        rp.serverX = p->players[i].x;
-        rp.serverY = p->players[i].y;
+        rp.serverPosition.x = p->players[i].x;
+        rp.serverPosition.y = p->players[i].y;
+        rp.alive = p->alive;
+        rp.invulnerable = p->invulnerable;
+        rp.respawnTime = p->respawnTime;
     }
 
     // Supprimer uniquement les joueurs distants qui ne sont plus dans le snapshot
     for (auto it = allPlayers.begin(); it != allPlayers.end();)
     {
-        if (it->first != localPlayer.id && seenIds.find(it->first) == seenIds.end())
+        // if (it->first != localPlayer.id && seenIds.find(it->first) == seenIds.end())
+        if (it->first != Config::Get().playerId && seenIds.find(it->first) == seenIds.end())
             it = allPlayers.erase(it);
         else
             ++it;
@@ -121,12 +145,10 @@ void Client::eventReceiveId(ENetEvent event)
     auto *p = reinterpret_cast<ServerAssignIdPacket *>(event.packet->data);
 
     allPlayers[p->id].id = p->id;
-    localPlayer.id = p->id;
-    localPlayer.position = {Config::Get().windowSize.x / 20.f, Config::Get().windowSize.y / (static_cast<float>(Config::Get().maxPlayers) + 1.f) * (static_cast<float>(p->id) + 1.f)};
-    sendPosition();
+    Config::Get().playerId = static_cast<int>(p->id);
     ConnexionState = ClientState::CONNECTED;
 
-    std::cout << "[Client] received(ASSIGN_ID): [" << localPlayer.id << "] \n";
+    std::cout << "[Client] received(ASSIGN_ID): [" << getLocalPlayer(allPlayers)->id << "] \n";
 }
 
 void Client::handleTypeConnect(ENetEvent event)
@@ -170,8 +192,8 @@ void Client::eventReceiveInitLevel(ENetEvent event)
               << " lookahead=" << terrain.lookahead
               << " cleanupMargin=" << terrain.cleanupMargin
               << "\n";
-    terrain.init(p->seed);
-    terrain.update(terrain.worldX);
+    // terrain.init(p->seed);
+    // terrain.update(terrain.worldX);
 }
 
 void Client::eventReceiveWorldX(ENetEvent event)
@@ -182,8 +204,51 @@ void Client::eventReceiveWorldX(ENetEvent event)
     auto *p = reinterpret_cast<WorldStatePacket *>(event.packet->data);
 
     targetWorldX = p->worldX;
+    terrain.worldX = targetWorldX;
     serverGameTime = p->serverGameTime;
     // std::cout << "[Client] received WORLD_X_UPDATE: worldX=" << targetWorldX << "\n";
+}
+
+void Client::onReceiveAllSegments(ENetEvent &event)
+{
+    terrain.segments.clear();
+
+    const uint8_t *ptr = event.packet->data;
+    const uint8_t *end = ptr + event.packet->dataLength;
+
+    // Header
+    if (ptr + sizeof(ServerAllSegmentsHeader) > end)
+        return;
+
+    auto header = reinterpret_cast<const ServerAllSegmentsHeader *>(ptr);
+    ptr += sizeof(ServerAllSegmentsHeader);
+
+    for (uint16_t s = 0; s < header->segmentCount; ++s)
+    {
+        if (ptr + sizeof(ServerSegmentPacket) > end)
+            break;
+
+        auto segPkt = reinterpret_cast<const ServerSegmentPacket *>(ptr);
+        ptr += sizeof(ServerSegmentPacket);
+
+        TerrainSegment seg;
+        seg.type = static_cast<SegmentType>(segPkt->type);
+        seg.startX = segPkt->startX;
+
+        for (uint16_t i = 0; i < segPkt->blockCount; ++i)
+        {
+            if (ptr + sizeof(ServerAllSegmentsBlockPacket) > end)
+                break;
+
+            auto blk = reinterpret_cast<const ServerAllSegmentsBlockPacket *>(ptr);
+            ptr += sizeof(ServerAllSegmentsBlockPacket);
+
+            seg.blocks.emplace_back(
+                sf::FloatRect{{blk->x, blk->y}, {blk->w, blk->h}});
+        }
+
+        terrain.segments.push_back(std::move(seg));
+    }
 }
 
 void Client::handleTypeReceive(ENetEvent event)
@@ -210,6 +275,12 @@ void Client::handleTypeReceive(ENetEvent event)
                 break;
             case static_cast<uint8_t>(ServerMsg::WORLD_X_UPDATE):
                 eventReceiveWorldX(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::NEW_SEGMENT):
+                onReceiveSegment(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::ALL_SEGMENTS):
+                onReceiveAllSegments(event);
                 break;
             default:
                 return;
@@ -255,15 +326,12 @@ void Client::update(float dt)
     std::lock_guard<std::mutex> lock(mtx);
     handleEnetService();
     sendPosition();
-    // renderWorldX += (targetWorldX - renderWorldX) * 0.1f;
-    // terrain.update(renderWorldX);
-    // terrain.update(targetWorldX);
 }
 
 void Client::sendPosition()
 {
     // envoyer la position au serveur
-    if (localPlayer.id < 0 || localPlayer.id > Config::Get().maxPlayers)
+    if (Config::Get().playerId < 0 || Config::Get().playerId > Config::Get().maxPlayers)
         return;
 
     if (peer)
@@ -273,30 +341,47 @@ void Client::sendPosition()
         float halfW = Config::Get().playerArea.getCenter().x * Config::Get().playerScale.x;
         float halfH = Config::Get().playerArea.getCenter().y * Config::Get().playerScale.y;
 
-        localPlayer.position.x = std::clamp(
-            localPlayer.position.x,
-            halfW,
-            Config::Get().windowSize.x - halfW);
-        localPlayer.position.y = std::clamp(
-            localPlayer.position.y,
-            halfH,
-            Config::Get().windowSize.y - halfH);
-        ClientPositionPacket p;
-        p.header.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
-        p.header.code = static_cast<uint8_t>(ClientMsg::PLAYER_POSITION);
-        p.id = localPlayer.id;
-        p.x = localPlayer.position.x;
-        p.y = localPlayer.position.y;
+        RemotePlayer *localPlayer = getLocalPlayer(allPlayers);
+        if (localPlayer)
+        {
+            // localPlayer->position.x = std::clamp(
+            //     localPlayer->position.x,
+            //     halfW,
+            //     static_cast<float>(Config::Get().windowSize.x) - halfW);
+            // localPlayer->position.y = std::clamp(
+            //     localPlayer->position.y,
+            //     halfH,
+            //     static_cast<float>(Config::Get().windowSize.y) - halfH);
 
-        ENetPacket *packet = enet_packet_create(&p, sizeof(p), 0);
-        enet_peer_send(peer, 0, packet);
+            // localPlayer->position.x = std::clamp(
+            //     localPlayer->position.x,
+            //     halfW,
+            //     Config::Get().windowSize.x - halfW);
+            // localPlayer->position.y = std::clamp(
+            //     localPlayer->position.y,
+            //     halfH,
+            //     Config::Get().windowSize.y - halfH);
+
+            ClientPositionPacket p;
+            p.header.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
+            p.header.code = static_cast<uint8_t>(ClientMsg::PLAYER_POSITION);
+            p.id = localPlayer->id;
+            // p.x = localPlayer->position.x;
+            // p.y = localPlayer->position.y;
+            p.velX = localPlayer->velocity.x;
+            p.velY = localPlayer->velocity.y;
+            ENetPacket *packet = enet_packet_create(&p, sizeof(p), 0);
+            enet_peer_send(peer, 0, packet);
+
+            // std::cout << "[Client] sent POSITION: [" << localPlayer->id << "] x=" << localPlayer->position.x << " y=" << localPlayer->position.y << "\n";
+        }
     }
 }
 
 void Client::sendBullets()
 {
     // envoyer la position au serveur
-    if (localPlayer.id < 0 || localPlayer.id > Config::Get().maxPlayers)
+    if (Config::Get().playerId < 0 || Config::Get().playerId > Config::Get().maxPlayers)
         return;
 
     if (peer)
@@ -304,9 +389,9 @@ void Client::sendBullets()
         ClientBulletPacket p;
         p.header.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
         p.header.code = static_cast<uint8_t>(ClientMsg::BULLET_SHOOT);
-        p.ownerId = localPlayer.id;
-        p.x = localPlayer.position.x;
-        p.y = localPlayer.position.y;
+        p.ownerId = Config::Get().playerId;
+        p.x = getLocalPlayer(allPlayers)->getBounds().getCenter().x;
+        p.y = getLocalPlayer(allPlayers)->getBounds().getCenter().y;
         p.velX = 1.f;
         p.velY = 0.f;
 

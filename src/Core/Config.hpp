@@ -7,11 +7,11 @@ constexpr float BACKGROUND_SCROLL_SPEED = 20.f;
 
 struct KeyBindings
 {
-    sf::Keyboard::Key up    = sf::Keyboard::Key::Up;//sf::Keyboard::Key::Up;
-    sf::Keyboard::Key down  = sf::Keyboard::Key::Down;
-    sf::Keyboard::Key left  = sf::Keyboard::Key::Left;
+    sf::Keyboard::Key up = sf::Keyboard::Key::Up; // sf::Keyboard::Key::Up;
+    sf::Keyboard::Key down = sf::Keyboard::Key::Down;
+    sf::Keyboard::Key left = sf::Keyboard::Key::Left;
     sf::Keyboard::Key right = sf::Keyboard::Key::Right;
-    sf::Keyboard::Key fire  = sf::Keyboard::Key::LControl;
+    sf::Keyboard::Key fire = sf::Keyboard::Key::LControl;
 };
 
 class Config
@@ -38,7 +38,7 @@ public:
 
     KeyBindings keys;
 
-    uint32_t id = 0;
+    int playerId = -1;
     std::string playerName = "001";
     std::string serverIp = "127.0.0.1";
     uint16_t serverPort = 1234;

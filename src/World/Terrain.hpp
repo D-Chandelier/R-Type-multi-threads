@@ -12,8 +12,9 @@ public:
 
     void init(uint32_t seed);
     void update(float worldX);
+    void updateCollision(float worldXServer);         // update segments côté collision
+    void updateDraw(float targetWorldX, float alpha); // update worldX pour dessin
     void draw(sf::RenderWindow &win);
-
     bool collides(const sf::FloatRect &box) const;
 
     uint32_t levelSeed;
@@ -22,12 +23,12 @@ public:
     float lookahead;
     float cleanupMargin;
     float worldX;
+    float collisionX;
+    std::deque<TerrainSegment> segments;
+    float nextSegmentX = 0.f;
+    std::mt19937 rng;
 
 private:
     void generateNextSegment();
     void generateNextSegmentAt(float startX);
-
-    std::mt19937 rng;
-    std::deque<TerrainSegment> segments;
-    float nextSegmentX;
 };

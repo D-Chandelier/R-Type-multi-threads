@@ -29,7 +29,9 @@ enum class ServerMsg : uint8_t
     BACKGROUND_STATE,
     BULLET_SHOOT,
     INIT_LEVEL,
-    WORLD_X_UPDATE
+    WORLD_X_UPDATE,
+    NEW_SEGMENT,
+    ALL_SEGMENTS
 };
 
 ///////////////////////////////////////////////////////:
@@ -47,6 +49,9 @@ struct PlayerState
     int id;
     float x;
     float y;
+    bool alive;
+    bool invulnerable;
+    double respawnTime;
 };
 
 struct ServerBullet
@@ -70,8 +75,10 @@ struct ClientPositionPacket
 {
     PacketHeader header;
     int id;
-    float x;
-    float y;
+    // float x;
+    // float y;
+    float velX;
+    float velY;
 };
 
 struct ClientBulletPacket
@@ -87,6 +94,9 @@ struct ServerPositionPacket
     PacketHeader header;
     uint8_t playerCount;
     PlayerState players[MAX_PLAYER];
+    bool alive;
+    bool invulnerable;
+    double respawnTime;
 
     double serverGameTime; // temps serveur actuel
     float scrollSpeed;
@@ -115,6 +125,54 @@ struct WorldStatePacket
     uint32_t seed;         // seed terrain
     float worldX;          // position monde actuelle
     double serverGameTime; // temps serveur actuel
+};
+
+struct ServerSegmentPacket
+{
+
+    PacketHeader header;
+    uint8_t type; // SegmentType
+    float startX;
+    uint8_t blockCount;
+    struct BlockData
+    {
+        float x, y, w, h;
+    } blocks[64]; // max 8 blocs par segment
+};
+
+// struct ServerAllSegmentsPacket
+// {
+
+//     PacketHeader header;
+//     uint8_t segmentCount;
+//     struct SegmentData
+//     {
+//         uint8_t type; // SegmentType
+//         float startX;
+//         uint8_t blockCount;
+//         struct BlockData
+//         {
+//             float x, y, w, h;
+//         } blocks[64]; // max 8 blocs par segment
+//     } segments[32];   // max 32 segments
+// };
+
+struct ServerAllSegmentsHeader
+{
+    uint8_t type;
+    uint8_t code;
+    uint16_t segmentCount;
+};
+
+struct ServerAllSegmentsPacket
+{
+    uint8_t type;
+    float startX;
+    uint16_t blockCount;
+};
+struct ServerAllSegmentsBlockPacket
+{
+    float x, y, w, h;
 };
 
 #pragma pack(pop)

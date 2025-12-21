@@ -3,6 +3,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/System/String.hpp>
 #include <string>
+#include "../Entities/RemotePlayers.hpp"
 
 // std::string getLocalIpAddress()
 // {
@@ -21,4 +22,11 @@ static double localTimeNow()
 static std::string keyToString(sf::Keyboard::Scancode k)
 {
     return sf::Keyboard::getDescription(k).toAnsiString(); // SFML >= 2.6
+}
+static RemotePlayer *getLocalPlayer(std::map<int, RemotePlayer> &p)
+{
+    auto it = p.find(Config::Get().playerId);
+    if (it != p.end())
+        return &it->second;
+    return nullptr;
 }

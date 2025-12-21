@@ -2,6 +2,38 @@
 
 std::atomic<bool> running{true};
 
+void Game::drawDebug()
+{
+    // Dessin du joueur
+    RemotePlayer *p = getLocalPlayer(client.allPlayers);
+    if (p)
+    {
+        sf::RectangleShape playerRect;
+        sf::FloatRect bounds = p->getBounds();
+        playerRect.setPosition({bounds.position.x, bounds.position.y});
+        playerRect.setSize({bounds.size.x, bounds.size.y});
+        playerRect.setFillColor(sf::Color(255, 0, 0, 128)); // rouge semi-transparent
+        window.draw(playerRect);
+    }
+
+    // Dessin des blocs
+    for (const auto &seg : client.terrain.segments)
+    {
+        for (const auto &block : seg.blocks)
+        {
+            sf::FloatRect blockRect = block;
+            blockRect.position.x += seg.startX - client.terrain.worldX; // coordonnées absolues
+
+            sf::RectangleShape rect;
+            rect.setPosition({blockRect.position.x, blockRect.position.y});
+            rect.setSize({blockRect.size.x, blockRect.size.y});
+            // Couleur selon solidité
+            rect.setFillColor(sf::Color(255, 0, 0, 128));
+            window.draw(rect);
+        }
+    }
+}
+
 Game::Game()
     : window(sf::VideoMode(Config::Get().windowSize),
              Config::Get().title),
@@ -9,8 +41,7 @@ Game::Game()
       menuServers(client, discoveryClient),
       menuOption(),
       menuInGame(),
-      menuBackground(Config::Get().font) //,
-// terrain()
+      menuBackground(Config::Get().font)
 {
     currentMenu = &menuMain;
 
@@ -164,46 +195,45 @@ void Game::onPlayerMove(float dt)
     if (state != GameState::IN_GAME)
         return;
 
-    // --- Mouvement ---
-    bool left = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
-    bool right = sf::Keyboard::isKeyPressed(Config::Get().keys.right);
-    bool up = sf::Keyboard::isKeyPressed(Config::Get().keys.up);
-    bool down = sf::Keyboard::isKeyPressed(Config::Get().keys.down);
-
-    sf::Vector2f vel{0.f, 0.f};
-
-    if (left && !right)
-        vel.x = -Config::Get().speed;
-    if (right && !left)
-        vel.x = Config::Get().speed;
-    if (up && !down)
-        vel.y = -Config::Get().speed;
-    if (down && !up)
-        vel.y = Config::Get().speed;
-
-    // normaliser diagonale
-    if (vel.x != 0.f && vel.y != 0.f)
-        vel /= std::sqrt(2.f);
-
-    client.localPlayer.velocity = vel;
-    client.localPlayer.position.x += vel.x * dt;
-    client.localPlayer.position.y += vel.y * dt;
-
-    // clamp dans la fenêtre
-    client.localPlayer.position.x = std::clamp(client.localPlayer.position.x, 0.f, static_cast<float>(Config::Get().windowSize.x));
-    client.localPlayer.position.y = std::clamp(client.localPlayer.position.y, 0.f, static_cast<float>(Config::Get().windowSize.y));
-
-    if (sf::Keyboard::isKeyPressed(Config::Get().keys.fire))
+    if (RemotePlayer *p = getLocalPlayer(client.allPlayers))
     {
-        double now = localTimeNow();
-        double fireInterval = 1.0 / client.localPlayer.fireRate;
+        // --- Mouvement ---
+        bool left = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
+        bool right = sf::Keyboard::isKeyPressed(Config::Get().keys.right);
+        bool up = sf::Keyboard::isKeyPressed(Config::Get().keys.up);
+        bool down = sf::Keyboard::isKeyPressed(Config::Get().keys.down);
 
-        if (now - client.localPlayer.lastShootTime >= fireInterval)
+        sf::Vector2f vel{0.f, 0.f};
+
+        if (left && !right)
+            vel.x = -Config::Get().speed;
+        if (right && !left)
+            vel.x = Config::Get().speed;
+        if (up && !down)
+            vel.y = -Config::Get().speed;
+        if (down && !up)
+            vel.y = Config::Get().speed;
+
+        // normaliser diagonale
+        if (vel.x != 0.f && vel.y != 0.f)
+            vel /= std::sqrt(2.f);
+
+        p->velocity = vel;
+
+        // --- Tir ---
+        if (sf::Keyboard::isKeyPressed(Config::Get().keys.fire))
         {
-            client.sendBullets();
-            client.localPlayer.lastShootTime = now;
+            double now = localTimeNow();
+            // double fireInterval = 1.0 / client.localPlayer.fireRate;
+            double fireInterval = 1.0 / p->fireRate;
+
+            if (now - p->lastShootTime >= fireInterval)
+            {
+                client.sendBullets();
+                p->lastShootTime = now;
+            }
         }
-    }
+    };
 }
 
 void Game::handleMenuAction()
@@ -337,7 +367,7 @@ void Game::update(float dt)
 void Game::updateGameplay(float dt)
 {
     updateBackgrounds();
-    updateTerrain();
+    // updateTerrain();
     updatePlayers();
     updateBullets(dt);
 }
@@ -387,45 +417,58 @@ void Game::updateBackgrounds()
 
 void Game::updateTerrain()
 {
-    // Temps écoulé depuis la dernière position serveur
+    // Interpolation pour smooth scrolling
     double delta = localTimeNow() - client.serverGameTime;
-    // Interpolation simple
-    float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
+    float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate));
     alpha = std::clamp(alpha, 0.f, 1.f);
 
     client.terrain.worldX += (client.targetWorldX - client.terrain.worldX) * alpha;
-    client.terrain.update(client.terrain.worldX);
+
+    // Nettoyage segments déjà passés (optionnel)
+    while (!client.terrain.segments.empty() &&
+           client.terrain.segments.front().startX + SEGMENT_WIDTH < client.terrain.worldX - 100.f)
+    {
+        client.terrain.segments.pop_front();
+    }
 }
+
 void Game::updatePlayers()
 {
-    for (auto &[id, p] : client.allPlayers)
-    {
-        // Temps écoulé depuis la dernière position serveur
-        double delta = localTimeNow() - p.lastUpdateTime;
-        // Interpolation simple
-        float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
-        alpha = std::clamp(alpha, 0.f, 1.f);
-
-        p.x += (p.serverX - p.x) * alpha;
-        p.y += (p.serverY - p.y) * alpha;
-    }
-
     int i = 0;
-    int cellWidth = static_cast<int>(Config::Get().playerArea.size.x);
-    int cellHeight = static_cast<int>(Config::Get().playerArea.size.y);
+    int cellWidth, cellHeight;
 
     playersVA.resize(client.allPlayers.size() * 6);
 
-    for (const auto &[id, p] : client.allPlayers)
+    for (auto &[id, p] : client.allPlayers)
     {
+        bool visible = true;
+        if (p.invulnerable)
+        {
+            double t = localTimeNow() - p.respawnTime;
+            visible = static_cast<int>(t * 10) % 2 == 0; // 10 Hz
+        }
+        if (!visible)
+            continue; // ne pas dessiner ce frame
 
-        sf::Vector2f origin = sf::Vector2f(cellWidth / 2.f, cellHeight / 2.f);
+        // Temps écoulé depuis la dernière position serveur
+        double delta = localTimeNow() - p.lastUpdateTime;
+        // Interpolation simple
+        float alpha = static_cast<float>(delta / (2.f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
+        alpha = std::clamp(alpha, 0.f, 1.f);
+
+        // p.position = p.serverPosition; // reset avant lerp
+        p.position += (p.serverPosition - p.position) * alpha;
+
+        cellWidth = Config::Get().playerArea.size.x;
+        cellHeight = Config::Get().playerArea.size.y;
+
+        sf::Vector2f origin = p.position; // getOrigine();
         sf::Vector2f scale = Config::Get().playerScale;
-        float w = static_cast<float>(cellWidth) * scale.x;
-        float h = static_cast<float>(cellHeight) * scale.y;
+        float w = p.getBounds().size.x; // static_cast<float>(cellWidth) * scale.x;
+        float h = p.getBounds().size.y; // static_cast<float>(cellHeight) * scale.y;
 
-        float x = (p.x - origin.x * scale.x);
-        float y = (p.y - origin.y * scale.y);
+        float x = p.getBounds().position.x; // p.position.x; //(p.position.x - origin.x * scale.x);
+        float y = p.getBounds().position.y; //(p.position.y - origin.y * scale.y);
 
         // positions du quad (2 triangles)
         playersVA[i * 6 + 0].position = {x, y};
@@ -499,17 +542,18 @@ void Game::draw(float dt)
         currentMenu->draw(window);
     }
     else
-        drawGameplay(window);
+        drawGameplay();
 
     window.display();
 }
 
-void Game::drawGameplay(sf::RenderWindow &w)
+void Game::drawGameplay()
 {
     drawBackground();
-    client.terrain.draw(w);
+    drawTerrain();
     drawPlayers();
     drawBullets();
+    // drawDebug(); // debug
 }
 
 void Game::drawBackground()
@@ -520,6 +564,25 @@ void Game::drawBackground()
 
     window.draw(backgroundVA_1, states_1);
     window.draw(backgroundVA_2, states_2);
+}
+
+void Game::drawTerrain()
+{
+    for (const auto &seg : client.terrain.segments)
+    {
+        for (const auto &block : seg.blocks)
+        {
+            sf::FloatRect blockRect = block;
+            blockRect.position.x += seg.startX - client.terrain.worldX; // coordonnées absolues
+
+            sf::RectangleShape rect;
+            rect.setPosition({blockRect.position.x, blockRect.position.y});
+            rect.setSize({blockRect.size.x, blockRect.size.y});
+            // Couleur selon solidité
+            rect.setFillColor(sf::Color(61, 43, 31));
+            window.draw(rect);
+        }
+    }
 }
 
 void Game::drawPlayers()

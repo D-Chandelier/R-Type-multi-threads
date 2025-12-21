@@ -21,7 +21,7 @@ public:
     Game();
     void run();
     void stopThreads();
-    void drawGameplay(sf::RenderWindow &w);
+    void drawGameplay();
     void update(float dt);
     void draw(float dt);
     void handleEvent();
@@ -34,8 +34,12 @@ public:
     void updateBullets(float dt);
     void rebuildBulletsVA();
     void drawBackground();
+    void drawTerrain();
     void drawPlayers();
     void drawBullets();
+
+    // Debug
+    void drawDebug();
 
 private:
     sf::RenderWindow window;

@@ -18,7 +18,6 @@ struct TerrainSegment
 {
     float startX;
     SegmentType type;
-
     std::vector<sf::FloatRect> blocks; // zones solides
 
     bool isOffScreen() const

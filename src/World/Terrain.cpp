@@ -12,6 +12,7 @@ void Terrain::init(uint32_t seed)
     cleanupMargin = 2.f * Config::Get().windowSize.x;
     // Générer juste assez pour le début
     generateNextSegment();
+
     generateNextSegment();
 }
 
@@ -102,6 +103,19 @@ void Terrain::generateNextSegmentAt(float startX)
     segments.push_back(seg);
 }
 
+void Terrain::updateCollision(float worldXServer)
+{
+    collisionX = worldXServer;
+
+    // Générer suffisamment loin devant
+    while (nextSegmentX < collisionX + lookahead)
+        generateNextSegment();
+
+    // Nettoyer derrière
+    while (!segments.empty() && segments.front().startX + SEGMENT_WIDTH < collisionX - cleanupMargin)
+        segments.pop_front();
+}
+
 bool Terrain::collides(const sf::FloatRect &box) const
 {
     for (const auto &seg : segments)
@@ -119,6 +133,12 @@ bool Terrain::collides(const sf::FloatRect &box) const
     return false;
 }
 
+void Terrain::updateDraw(float targetWorldX, float alpha)
+{
+    // Interpolation pour le rendu fluide
+    worldX += (targetWorldX - worldX) * alpha;
+}
+
 void Terrain::draw(sf::RenderWindow &win)
 {
     sf::RectangleShape r;
@@ -128,17 +148,13 @@ void Terrain::draw(sf::RenderWindow &win)
     {
         for (const auto &block : seg.blocks)
         {
-            float screenX = block.position.x + seg.startX - worldX;
-
-            // culling simple (optionnel mais propre)
-            if (screenX + block.size.x < 0 ||
-                screenX > Config::Get().windowSize.x)
+            float screenX = block.position.x - worldX;
+            if (screenX + block.size.x < 0 || screenX > Config::Get().windowSize.x)
                 continue;
 
             r.setPosition({screenX, block.position.y});
             r.setSize(block.size);
             win.draw(r);
-            // std::cout << "Draw segment at screenX=" << screenX << "\n";
         }
     }
 }

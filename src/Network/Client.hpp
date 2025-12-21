@@ -16,6 +16,8 @@
 #include "../Entities/Bullet.hpp"
 #include "NetworkDiscovery.hpp"
 
+#include "../Core/Utils.hpp"
+
 enum class ClientState
 {
     DISCONNECTED,
@@ -45,6 +47,8 @@ public:
     void eventReceiveBullets(ENetEvent event);
     void eventReceiveInitLevel(ENetEvent event);
     void eventReceiveWorldX(ENetEvent event);
+    void onReceiveSegment(ENetEvent &event);
+    void onReceiveAllSegments(ENetEvent &event);
 
     void sendPosition();
     void sendBullets();
@@ -55,7 +59,7 @@ public:
     ENetHost *clientHost;
     ENetPeer *peer;
 
-    Player localPlayer;
+    // Player localPlayer;
     std::map<int, RemotePlayer> allPlayers;
     std::unordered_map<uint32_t, Bullet> allBullets;
 

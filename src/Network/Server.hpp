@@ -18,6 +18,8 @@
 #include "../World/Terrain.hpp"
 #include "NetworkDiscovery.hpp"
 
+// #define min(a, b) (((a) < (b)) ? (a) : (b))
+
 class Server
 {
 public:
@@ -28,23 +30,31 @@ public:
     void stop();
     void update(float dt);
     void sendLevel(ENetPeer *peer);
+    void sendSegment(const TerrainSegment &seg, ENetPeer *peer);
+    void sendAllSegments(ENetPeer *peer);
+    TerrainSegment generateNextSegment();
 
-    void handleEnetService();
+    void handleEnetService(float dt);
     void handleTypeConnect(ENetEvent event);
-    void handleTypeReceive(ENetEvent event);
+    void handleTypeReceive(ENetEvent event, float dt);
     void handleTypeDisconnect(ENetEvent event);
     void sendNewId(ENetEvent event);
-    void onReceivePlayerPosition(ENetEvent event);
+    void onReceivePlayerPosition(ENetEvent event, float dt);
     void onReceiveBulletShoot(ENetEvent event);
 
     static double getNowSeconds();
     double currentGameTime() const;
     RemotePlayer *getPlayerByPeer(ENetPeer *peer);
 
+    void checkPlayerCollision(RemotePlayer &player);
+
     void broadcastPositions();                    // envoie positions à tous les clients
     void broadcastWorldX();                       // envoie la position monde à tous les clients
     void broadcastBullets(const ServerBullet &b); // envoie les tirs à tous les clients
     int findFreePlayerId();
+
+    void killAndRespawn(RemotePlayer &p);
+
     std::atomic_bool serverReady = false;
 
     uint32_t levelSeed;
