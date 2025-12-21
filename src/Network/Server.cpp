@@ -33,7 +33,18 @@ bool Server::start(uint16_t port)
     worldX = 0.f;
 
     terrain.init(levelSeed);
-    terrain.update(worldX);
+    // generateNextSegment();
+    // generateNextSegment();
+    while (terrain.nextSegmentX < worldX + lookahead)
+        generateNextSegment();
+
+    // Nettoyage optionnel
+    while (!terrain.segments.empty() &&
+           terrain.segments.front().startX + SEGMENT_WIDTH < worldX - cleanupMargin)
+    {
+        terrain.segments.pop_front();
+    }
+    // terrain.update(worldX);
 
     return true;
 }
@@ -78,6 +89,19 @@ inline bool aabbOverlap(const sf::FloatRect &a, const sf::FloatRect &b)
            a.position.y + a.size.y > b.position.y;
 }
 
+bool continuesGround(const TerrainSegment *prev)
+{
+    if (!prev)
+        return false;
+    if (prev->blocks.empty())
+        return false;
+
+    // Le dernier bloc du segment précédent touche le sol
+    return prev->type == SegmentType::Flat ||
+           prev->type == SegmentType::Corridor ||
+           prev->type == SegmentType::TurretZone;
+}
+
 TerrainSegment Server::generateNextSegment()
 {
     TerrainSegment seg;
@@ -88,74 +112,213 @@ TerrainSegment Server::generateNextSegment()
 
     const float groundY = Config::Get().windowSize.y - GROUND_HEIGHT;
 
+    const int tilesX = static_cast<int>(SEGMENT_WIDTH / TILE);
+    const int tilesY = static_cast<int>(GROUND_HEIGHT / TILE);
+
+    auto groundVisual = [&](int x, int y)
+    {
+        if (y == 0)
+        {
+            if (x == 0)
+                return BlockVisual::GroundTopLeft;
+            if (x == tilesX - 1)
+                return BlockVisual::GroundTopRight;
+            return BlockVisual::GroundTopMid;
+        }
+        else
+        {
+            if (x == 0)
+                return BlockVisual::GroundFillLeft;
+            if (x == tilesX - 1)
+                return BlockVisual::GroundFillRight;
+            return BlockVisual::GroundFillMid;
+        }
+    };
+
+    auto ceilingVisual = [&](int x)
+    {
+        if (x == 0)
+            return BlockVisual::CeilingLeft;
+        if (x == tilesX - 1)
+            return BlockVisual::CeilingRight;
+        return BlockVisual::CeilingMid;
+    };
+
     switch (seg.type)
     {
+    // =========================
+    // FLAT
+    // =========================
     case SegmentType::Flat:
-        seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {SEGMENT_WIDTH, GROUND_HEIGHT}});
-        break;
+    {
+        //     constexpr float TILE = 64.f;
+        //     const int tilesX = static_cast<int>(SEGMENT_WIDTH / TILE);
+        //     const int tilesY = static_cast<int>(GROUND_HEIGHT / TILE);
 
+        //     // Vérifier le segment précédent
+        //     //const TerrainSegment *prev = terrain.segments.empty() ? nullptr : &terrain.segments.back();
+
+        //     for (int y = 0; y < tilesY; ++y)
+        //     {
+        //         for (int x = 0; x < tilesX; ++x)
+        //         {
+        //             BlockVisual v;
+
+        //             if (y == 0)
+        //             {
+        //                 // ligne du dessus
+        //                 if (prev && prev->blocks.size() >= tilesY)
+        //                 {
+        //                     // // segment précédent présent : début = TopMid
+        //                     // if (x == 0)
+        //                     //     v = BlockVisual::GroundTopMid;
+        //                     // else if (x == tilesX - 1)
+        //                     //     v = BlockVisual::GroundTopRight;
+        //                     // else
+        //                     //     v = BlockVisual::GroundTopMid;
+        //                 }
+        //                 else
+        //                 {
+        //                     // pas de précédent
+        //                     if (x == 0)
+        //                         v = BlockVisual::GroundTopLeft;
+        //                     else if (x == tilesX - 1)
+        //                         v = BlockVisual::GroundTopRight;
+        //                     else
+        //                         v = BlockVisual::GroundTopMid;
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 // lignes de remplissage
+        //                 if (x == 0)
+        //                     v = BlockVisual::GroundFillLeft;
+        //                 else if (x == tilesX - 1)
+        //                     v = BlockVisual::GroundFillRight;
+        //                 else
+        //                     v = BlockVisual::GroundFillMid;
+        //             }
+
+        //             seg.blocks.push_back({sf::FloatRect{{x * TILE, groundY + y * TILE}, {TILE, TILE}}, v});
+        //         }
+        //     }
+
+        //     break;
+        // }
+
+        for (int y = 0; y < tilesY; ++y)
+        {
+            for (int x = 0; x < tilesX; ++x)
+            {
+                seg.blocks.push_back({sf::FloatRect{
+                                          {x * TILE, groundY + y * TILE},
+                                          {TILE, TILE}},
+                                      groundVisual(x, y)});
+            }
+        }
+        break;
+    }
+
+    // =========================
+    // HOLE
+    // =========================
     case SegmentType::Hole:
     {
+        constexpr float TILE = 64.f;
+
         const float holeWidth = SEGMENT_WIDTH * 0.4f;
         const float sideWidth = (SEGMENT_WIDTH - holeWidth) * 0.5f;
 
-        seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {sideWidth, GROUND_HEIGHT}});
-        seg.blocks.emplace_back(sf::FloatRect{{sideWidth + holeWidth, groundY}, {sideWidth, GROUND_HEIGHT}});
+        const int leftCount = static_cast<int>(sideWidth / TILE);
+        const int rightCount = leftCount;
+
+        // ----- Plateforme gauche -----
+        for (int i = 0; i < leftCount; ++i)
+        {
+            BlockVisual v;
+            if (i == 0)
+                v = BlockVisual::GroundTopLeft;
+            else if (i == leftCount - 1)
+                v = BlockVisual::GroundTopRight; // bord du trou
+            else
+                v = BlockVisual::GroundTopMid;
+
+            seg.blocks.push_back({sf::FloatRect{{i * TILE, groundY}, {TILE, TILE}},
+                                  v});
+        }
+
+        // ----- Plateforme droite -----
+        const float rightStartX = sideWidth + holeWidth;
+
+        for (int i = 0; i < rightCount; ++i)
+        {
+            BlockVisual v;
+            if (i == 0)
+                v = BlockVisual::GroundTopLeft; // bord du trou
+            else if (i == rightCount - 1)
+                v = BlockVisual::GroundTopRight;
+            else
+                v = BlockVisual::GroundTopMid;
+
+            seg.blocks.push_back({sf::FloatRect{{rightStartX + i * TILE, groundY}, {TILE, TILE}},
+                                  v});
+        }
+
         break;
     }
 
+    // =========================
+    // CORRIDOR
+    // =========================
     case SegmentType::Corridor:
-        seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {SEGMENT_WIDTH, GROUND_HEIGHT}});
-        seg.blocks.emplace_back(sf::FloatRect{{0.f, 0.f}, {SEGMENT_WIDTH, 80.f}});
-        break;
+    {
+        // sol
+        for (int y = 0; y < tilesY; ++y)
+        {
+            for (int x = 0; x < tilesX; ++x)
+            {
+                seg.blocks.push_back({sf::FloatRect{
+                                          {x * TILE, groundY + y * TILE},
+                                          {TILE, TILE}},
+                                      groundVisual(x, y)});
+            }
+        }
 
-    case SegmentType::TurretZone:
-        seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {SEGMENT_WIDTH, GROUND_HEIGHT}});
+        // plafond
+        for (int x = 0; x < tilesX; ++x)
+        {
+            seg.blocks.push_back({sf::FloatRect{
+                                      {x * TILE, 0.f},
+                                      {TILE, TILE}},
+                                  ceilingVisual(x)});
+        }
         break;
+    }
+
+    // =========================
+    // TURRET ZONE (sol seul)
+    // =========================
+    case SegmentType::TurretZone:
+    {
+        for (int y = 0; y < tilesY; ++y)
+        {
+            for (int x = 0; x < tilesX; ++x)
+            {
+                seg.blocks.push_back({sf::FloatRect{
+                                          {x * TILE, groundY + y * TILE},
+                                          {TILE, TILE}},
+                                      groundVisual(x, y)});
+            }
+        }
+        break;
+    }
     }
 
     terrain.segments.push_back(seg);
-    terrain.nextSegmentX += SEGMENT_WIDTH;
+    terrain.nextSegmentX += SEGMENT_WIDTH - TILE;
 
     return seg;
 }
-
-// TerrainSegment Server::generateNextSegment()
-// {
-//     TerrainSegment seg;
-//     seg.startX = terrain.nextSegmentX;
-
-//     std::uniform_int_distribution<int> dist(0, 3);
-//     seg.type = static_cast<SegmentType>(dist(terrain.rng));
-
-//     float groundY = Config::Get().windowSize.y - GROUND_HEIGHT;
-
-//     switch (seg.type)
-//     {
-//     case SegmentType::Flat:
-//         seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {SEGMENT_WIDTH, GROUND_HEIGHT}});
-//         break;
-//     case SegmentType::Hole:
-//     {
-//         float holeWidth = SEGMENT_WIDTH * 0.4f;
-//         seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {(SEGMENT_WIDTH - holeWidth) / 2.f, GROUND_HEIGHT}});
-//         seg.blocks.emplace_back(sf::FloatRect{{(SEGMENT_WIDTH + holeWidth) / 2.f, groundY}, {(SEGMENT_WIDTH - holeWidth) / 2.f, GROUND_HEIGHT}});
-//     }
-//     break;
-//     case SegmentType::Corridor:
-//         seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {SEGMENT_WIDTH, GROUND_HEIGHT}});
-//         seg.blocks.emplace_back(sf::FloatRect{{0.f, 0.f}, {SEGMENT_WIDTH, 80.f}});
-//         break;
-//     case SegmentType::TurretZone:
-//         seg.blocks.emplace_back(sf::FloatRect{{0.f, groundY}, {SEGMENT_WIDTH, GROUND_HEIGHT}});
-//         break;
-//     }
-
-//     terrain.segments.push_back(seg);
-//     terrain.nextSegmentX += SEGMENT_WIDTH;
-
-//     return seg;
-// }
 
 void Server::checkPlayerCollision(RemotePlayer &p)
 {
@@ -171,17 +334,17 @@ void Server::checkPlayerCollision(RemotePlayer &p)
     {
         for (const auto &block : seg.blocks)
         {
-            sf::FloatRect b = block;
-            b.position.x += seg.startX - worldX; // ⚠️ ABSOLU, PAS worldX
+            TerrainBlock b = block;
+            b.rect.position.x += seg.startX - worldX; // ⚠️ ABSOLU, PAS worldX
 
-            if (!b.findIntersection(player))
+            if (!b.rect.findIntersection(player))
                 continue;
 
             // Overlaps (MTV)
-            float dx1 = b.position.x + b.size.x - player.position.x;
-            float dx2 = player.position.x + player.size.x - b.position.x;
-            float dy1 = b.position.y + b.size.y - player.position.y;
-            float dy2 = player.position.y + player.size.y - b.position.y;
+            float dx1 = b.rect.position.x + b.rect.size.x - player.position.x;
+            float dx2 = player.position.x + player.size.x - b.rect.position.x;
+            float dy1 = b.rect.position.y + b.rect.size.y - player.position.y;
+            float dy2 = player.position.y + player.size.y - b.rect.position.y;
 
             float overlapX = min(dx1, dx2);
             float overlapY = min(dy1, dy2);
@@ -189,36 +352,47 @@ void Server::checkPlayerCollision(RemotePlayer &p)
             // Résolution sur l’axe le plus faible
             if (overlapX < overlapY)
             {
-                if (player.position.x < b.position.x)
+                if (player.position.x < b.rect.position.x)
                     p.position.x -= overlapX;
                 else
                     p.position.x += overlapX;
 
                 p.velocity.x = 0.f;
+
                 blockedX = true;
             }
             else
             {
-                if (player.position.y < b.position.y)
-                    p.position.y -= overlapY;
+                if (player.position.y < b.rect.position.y)
+                    p.position.y -= overlapY; // petit fudge pour éviter de rester collé
                 else
                     p.position.y += overlapY;
 
                 p.velocity.y = 0.f;
                 // blockedY = true;
             }
+            // Clamp final écran (optionnel)
+            p.position.x = std::clamp(
+                p.position.x,
+                0.f,
+                static_cast<float>(Config::Get().windowSize.x) - player.size.x);
+
+            p.position.y = std::clamp(
+                p.position.y,
+                0.f,
+                static_cast<float>(Config::Get().windowSize.y) - player.size.y);
 
             // Mettre à jour le rect après correction
             player = p.getBounds();
-            if (blockedX && p.position.x <= 0.f && !p.invulnerable)
-            {
-                killAndRespawn(p);
-                return;
-            }
+            if (player.findIntersection(b.rect))
+
+                if (blockedX && p.position.x <= 0.f && !p.invulnerable)
+                {
+                    killAndRespawn(p);
+                    return;
+                }
         }
     }
-
-    // Clamp final écran (optionnel)
     p.position.x = std::clamp(
         p.position.x,
         0.f,
@@ -229,6 +403,67 @@ void Server::checkPlayerCollision(RemotePlayer &p)
         0.f,
         static_cast<float>(Config::Get().windowSize.y) - player.size.y);
 }
+
+// void Server::checkPlayerCollision(RemotePlayer &p)
+// {
+//     sf::FloatRect player = p.getBounds();
+//     sf::Vector2f nextPos = p.position + p.velocity * SERVER_TICK;
+
+//     // --- Correction X (gauche/droite)
+//     for (const auto &seg : terrain.segments)
+//     {
+//         for (const auto &block : seg.blocks)
+//         {
+//             TerrainBlock b = block;
+//             b.rect.position.x += seg.startX - worldX;
+
+//             sf::FloatRect testRect = player;
+//             testRect.position.x = nextPos.x;
+
+//             if (testRect.findIntersection(b.rect))
+//             {
+//                 if (nextPos.x < b.rect.position.x)
+//                     nextPos.x = b.rect.position.x - player.size.x; // bloque à gauche du bloc
+//                 else
+//                     nextPos.x = b.rect.position.x + b.rect.size.x; // bloque à droite du bloc
+
+//                 p.velocity.x = 0.f;
+//             }
+//         }
+//     }
+
+//     // --- Correction Y (haut/bas)
+//     for (const auto &seg : terrain.segments)
+//     {
+//         for (const auto &block : seg.blocks)
+//         {
+//             TerrainBlock b = block;
+//             b.rect.position.x += seg.startX - worldX;
+
+//             sf::FloatRect testRect = player;
+//             testRect.position.y = nextPos.y;
+
+//             if (testRect.findIntersection(b.rect))
+//             {
+//                 // collision par le bas
+//                 if (p.velocity.y > 0 && player.position.y + player.size.y <= b.rect.position.y)
+//                 {
+//                     nextPos.y = b.rect.position.y - player.size.y;
+//                     p.velocity.y = 0.f;
+//                 }
+//                 // collision par le haut
+//                 else if (p.velocity.y < 0 && player.position.y >= b.rect.position.y + b.rect.size.y)
+//                 {
+//                     nextPos.y = b.rect.position.y + b.rect.size.y;
+//                     p.velocity.y = 0.f;
+//                 }
+//             }
+//         }
+//     }
+
+//     // --- Appliquer position finale
+//     p.position = nextPos;
+// }
 
 void Server::killAndRespawn(RemotePlayer &p)
 {
@@ -380,11 +615,11 @@ void Server::sendAllSegments(ENetPeer *peer)
         for (const auto &b : seg.blocks)
         {
             ServerAllSegmentsBlockPacket blk;
-            blk.x = b.position.x;
-            blk.y = b.position.y;
-            blk.w = b.size.x;
-            blk.h = b.size.y;
-
+            blk.x = b.rect.position.x;
+            blk.y = b.rect.position.y;
+            blk.w = b.rect.size.x;
+            blk.h = b.rect.size.y;
+            blk.visual = static_cast<uint8_t>(b.visual);
             memcpy(ptr, &blk, sizeof(blk));
             ptr += sizeof(blk);
         }
@@ -403,10 +638,11 @@ void Server::sendSegment(const TerrainSegment &seg, ENetPeer *peer)
     p.blockCount = static_cast<uint8_t>(seg.blocks.size());
     for (size_t i = 0; i < seg.blocks.size(); ++i)
     {
-        p.blocks[i].x = seg.blocks[i].position.x;
-        p.blocks[i].y = seg.blocks[i].position.y;
-        p.blocks[i].w = seg.blocks[i].size.x;
-        p.blocks[i].h = seg.blocks[i].size.y;
+        p.blocks[i].x = seg.blocks[i].rect.position.x;
+        p.blocks[i].y = seg.blocks[i].rect.position.y;
+        p.blocks[i].w = seg.blocks[i].rect.size.x;
+        p.blocks[i].h = seg.blocks[i].rect.size.y;
+        p.blocks[i].visual = static_cast<uint8_t>(seg.blocks[i].visual);
     }
     for (const auto &[id, player] : allPlayers)
     {
@@ -569,6 +805,7 @@ void Server::update(float dt)
                 if (!player.peer)
                     continue;
                 sendSegment(seg, player.peer);
+                // sendAllSegments(player.peer);
             }
         }
 

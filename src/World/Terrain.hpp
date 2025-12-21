@@ -4,6 +4,7 @@
 #include "Segments.hpp"
 #include <deque>
 #include <random>
+#include "BlockVisual.hpp"
 
 class Terrain
 {
@@ -16,6 +17,8 @@ public:
     void updateDraw(float targetWorldX, float alpha); // update worldX pour dessin
     void draw(sf::RenderWindow &win);
     bool collides(const sf::FloatRect &box) const;
+
+    sf::IntRect getTextureRect(BlockVisual v);
 
     uint32_t levelSeed;
     uint32_t serverTick;

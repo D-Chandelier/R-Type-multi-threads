@@ -21,7 +21,7 @@ void Game::drawDebug()
     {
         for (const auto &block : seg.blocks)
         {
-            sf::FloatRect blockRect = block;
+            sf::FloatRect blockRect = block.rect;
             blockRect.position.x += seg.startX - client.terrain.worldX; // coordonnées absolues
 
             sf::RectangleShape rect;
@@ -568,21 +568,40 @@ void Game::drawBackground()
 
 void Game::drawTerrain()
 {
+    sf::Sprite sprite(Config::Get().blockTexture);
+    // sprite.setTexture(blocksTexture);
+
     for (const auto &seg : client.terrain.segments)
     {
-        for (const auto &block : seg.blocks)
+        for (const auto &b : seg.blocks)
         {
-            sf::FloatRect blockRect = block;
-            blockRect.position.x += seg.startX - client.terrain.worldX; // coordonnées absolues
+            float screenX = b.rect.position.x + seg.startX - client.terrain.worldX;
 
-            sf::RectangleShape rect;
-            rect.setPosition({blockRect.position.x, blockRect.position.y});
-            rect.setSize({blockRect.size.x, blockRect.size.y});
-            // Couleur selon solidité
-            rect.setFillColor(sf::Color(61, 43, 31));
-            window.draw(rect);
+            if (screenX + b.rect.size.x < 0 ||
+                screenX > Config::Get().windowSize.x)
+                continue;
+
+            sprite.setPosition({screenX, b.rect.position.y});
+            sprite.setTextureRect(client.terrain.getTextureRect(b.visual));
+
+            window.draw(sprite);
         }
     }
+    // for (const auto &seg : client.terrain.segments)
+    // {
+    //     for (const auto &block : seg.blocks)
+    //     {
+    //         sf::FloatRect blockRect = block;
+    //         blockRect.position.x += seg.startX - client.terrain.worldX; // coordonnées absolues
+
+    //         sf::RectangleShape rect;
+    //         rect.setPosition({blockRect.position.x, blockRect.position.y});
+    //         rect.setSize({blockRect.size.x, blockRect.size.y});
+    //         // Couleur selon solidité
+    //         rect.setFillColor(sf::Color(61, 43, 31));
+    //         window.draw(rect);
+    //     }
+    // }
 }
 
 void Game::drawPlayers()

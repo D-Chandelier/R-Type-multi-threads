@@ -1,9 +1,11 @@
 ﻿#pragma once
 #include <SFML/Graphics/Rect.hpp>
 #include <vector>
+#include "BlockVisual.hpp"
 
 constexpr float SEGMENT_WIDTH = 512.f;
 constexpr float GROUND_HEIGHT = 64.f;
+constexpr float TILE = 64.f;
 constexpr float LEVEL_SCROLL_SPEED = 180.f;
 
 enum class SegmentType
@@ -18,7 +20,7 @@ struct TerrainSegment
 {
     float startX;
     SegmentType type;
-    std::vector<sf::FloatRect> blocks; // zones solides
+    std::vector<TerrainBlock> blocks; // zones solides
 
     bool isOffScreen() const
     {

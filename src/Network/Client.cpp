@@ -72,7 +72,9 @@ void Client::onReceiveSegment(ENetEvent &event)
     for (int i = 0; i < p->blockCount; ++i)
     {
         const auto &b = p->blocks[i];
-        seg.blocks.emplace_back(sf::FloatRect{{b.x, b.y}, {b.w, b.h}});
+        seg.blocks.emplace_back(
+            sf::FloatRect{{b.x, b.y}, {b.w, b.h}},
+            static_cast<BlockVisual>(b.visual));
     }
 
     terrain.segments.push_back(seg);
@@ -244,7 +246,9 @@ void Client::onReceiveAllSegments(ENetEvent &event)
             ptr += sizeof(ServerAllSegmentsBlockPacket);
 
             seg.blocks.emplace_back(
-                sf::FloatRect{{blk->x, blk->y}, {blk->w, blk->h}});
+                TerrainBlock{
+                    sf::FloatRect{{blk->x, blk->y}, {blk->w, blk->h}},
+                    static_cast<BlockVisual>(blk->visual)});
         }
 
         terrain.segments.push_back(std::move(seg));

@@ -137,6 +137,7 @@ struct ServerSegmentPacket
     struct BlockData
     {
         float x, y, w, h;
+        uint8_t visual;
     } blocks[64]; // max 8 blocs par segment
 };
 
@@ -173,6 +174,7 @@ struct ServerAllSegmentsPacket
 struct ServerAllSegmentsBlockPacket
 {
     float x, y, w, h;
+    uint8_t visual;
 };
 
 #pragma pack(pop)

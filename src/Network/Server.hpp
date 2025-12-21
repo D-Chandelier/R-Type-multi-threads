@@ -18,6 +18,8 @@
 #include "../World/Terrain.hpp"
 #include "NetworkDiscovery.hpp"
 
+#include "../World/BlockVisual.hpp"
+
 // #define min(a, b) (((a) < (b)) ? (a) : (b))
 
 class Server

@@ -2,20 +2,21 @@
 #pragma once
 #include <SFML/Graphics/Rect.hpp>
 
-class BlockVisual
+enum class BlockVisual
 {
     CeilingLeft,
-        CeilingMid,
-        CeilingRight,
+    CeilingMid,
+    CeilingRight,
 
-        GroundTopLeft,
-        GroundTopMid,
-        GroundTopRight,
+    GroundTopLeft,
+    GroundTopMid,
+    GroundTopRight,
 
-        GroundFillLeft,
-        GroundFillMid,
-        GroundFillRight
+    GroundFillLeft,
+    GroundFillMid,
+    GroundFillRight
 };
+
 struct TerrainBlock
 {
     sf::FloatRect rect;

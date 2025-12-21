@@ -10,10 +10,10 @@ void Terrain::init(uint32_t seed)
     nextSegmentX = 0.f;
     lookahead = 3.f * Config::Get().windowSize.x;
     cleanupMargin = 2.f * Config::Get().windowSize.x;
-    // Générer juste assez pour le début
-    generateNextSegment();
+    // // Générer juste assez pour le début
+    // generateNextSegment();
 
-    generateNextSegment();
+    // generateNextSegment();
 }
 
 void Terrain::generateNextSegment()
@@ -122,7 +122,7 @@ bool Terrain::collides(const sf::FloatRect &box) const
     {
         for (const auto &block : seg.blocks)
         {
-            sf::FloatRect worldBlock = block;
+            sf::FloatRect worldBlock = block.rect;
             worldBlock.position.x += seg.startX; // position absolue
 
             // SFML3 : findIntersection
@@ -148,13 +148,42 @@ void Terrain::draw(sf::RenderWindow &win)
     {
         for (const auto &block : seg.blocks)
         {
-            float screenX = block.position.x - worldX;
-            if (screenX + block.size.x < 0 || screenX > Config::Get().windowSize.x)
+            float screenX = block.rect.position.x - worldX;
+            if (screenX + block.rect.size.x < 0 || screenX > Config::Get().windowSize.x)
                 continue;
 
-            r.setPosition({screenX, block.position.y});
-            r.setSize(block.size);
+            r.setPosition({screenX, block.rect.position.y});
+            r.setSize(block.rect.size);
             win.draw(r);
         }
     }
 }
+
+sf::IntRect Terrain::getTextureRect(BlockVisual v)
+{
+    constexpr int TILE = 64;
+
+    switch (v)
+    {
+    case BlockVisual::CeilingLeft:
+        return {{0 * TILE, 0 * TILE}, {TILE, TILE}};
+    case BlockVisual::CeilingMid:
+        return {{1 * TILE, 0 * TILE}, {TILE, TILE}};
+    case BlockVisual::CeilingRight:
+        return {{2 * TILE, 0 * TILE}, {TILE, TILE}};
+    case BlockVisual::GroundTopLeft:
+        return {{0 * TILE, 1 * TILE}, {TILE, TILE}};
+    case BlockVisual::GroundTopMid:
+        return {{1 * TILE, 1 * TILE}, {TILE, TILE}};
+    case BlockVisual::GroundTopRight:
+        return {{2 * TILE, 1 * TILE}, {TILE, TILE}};
+    case BlockVisual::GroundFillLeft:
+        return {{0 * TILE, 2 * TILE}, {TILE, TILE}};
+    case BlockVisual::GroundFillMid:
+        return {{1 * TILE, 2 * TILE}, {TILE, TILE}};
+    case BlockVisual::GroundFillRight:
+        return {{2 * TILE, 2 * TILE}, {TILE, TILE}};
+    }
+
+    return {{0, 0}, {TILE, TILE}};
+};

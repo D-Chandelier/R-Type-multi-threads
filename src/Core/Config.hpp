@@ -49,6 +49,7 @@ public:
     uint32_t frameRate = 120; // FPS / Hz
 
     sf::Texture texture;
+    sf::Texture blockTexture;
     sf::Vector2f playerScale = {2.f, 2.f};
     sf::FloatRect playerArea;
 
@@ -61,6 +62,8 @@ private:
             std::cerr << "[CONFIG] Impossible de charger la font\n";
         if (!texture.loadFromFile("assets/r-typesheet42.gif"))
             std::cerr << "[CONFIG] Impossible de charger r-typesheet42.gif\n";
+        if (!blockTexture.loadFromFile("assets/world_01_192x192.png"))
+            std::cerr << "[CONFIG] Impossible de charger world_01_192x192.png\n";
 
         playerArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(texture.getSize().x / 5), static_cast<float>(texture.getSize().y / 5)}};
         gameArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(windowSize.x), static_cast<float>(windowSize.y)}};
