@@ -138,7 +138,13 @@ struct ServerSegmentPacket
     {
         float x, y, w, h;
         uint8_t visual;
-    } blocks[64]; // max 8 blocs par segment
+        bool hasTurret;
+    } blocks[64];
+    uint8_t turretCount;
+    struct TurretData
+    {
+        float x, y;
+    } turrets[128];
 };
 
 // struct ServerAllSegmentsPacket
@@ -175,6 +181,12 @@ struct ServerAllSegmentsBlockPacket
 {
     float x, y, w, h;
     uint8_t visual;
+    bool hasTurret;
+};
+
+struct ServerTurretPacket
+{
+    float x, y;
 };
 
 #pragma pack(pop)

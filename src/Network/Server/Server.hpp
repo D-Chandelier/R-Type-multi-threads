@@ -10,17 +10,16 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../Core/Config.hpp"
+#include "../../Core/Config.hpp"
+#include "../../Core/Utils.hpp"
 
-#include "Packets/Packets.hpp"
-#include "../Entities/RemotePlayers.hpp"
-#include "../Entities/Bullet.hpp"
-#include "../World/Terrain.hpp"
-#include "NetworkDiscovery.hpp"
+#include "../../Entities/RemotePlayers.hpp"
+#include "../../Entities/Bullet.hpp"
+#include "../../World/Terrain.hpp"
+#include "../Protocols/Packets/Packets.hpp"
+#include "../Protocols/NetworkDiscovery.hpp"
 
-#include "../World/BlockVisual.hpp"
-
-// #define min(a, b) (((a) < (b)) ? (a) : (b))
+#include "../../World/BlockVisual.hpp"
 
 class Server
 {
@@ -31,28 +30,31 @@ public:
     bool start(uint16_t port);
     void stop();
     void update(float dt);
-    void sendLevel(ENetPeer *peer);
-    void sendSegment(const TerrainSegment &seg, ENetPeer *peer);
-    void sendAllSegments(ENetPeer *peer);
-    TerrainSegment generateNextSegment();
+
+    void packetBroadcastPositions();                    // envoie positions à tous les clients
+    void packetBroadcastBullets(const ServerBullet &b); // envoie les tirs à tous les clients
+    void packetBroadcastWorldX();                       // envoie la position monde à tous les clients
+
+    void packetSendAllSegments(ENetPeer *peer);
+    void packetSendSegment(const TerrainSegment &seg, ENetPeer *peer);
+    void packetSendNewId(ENetEvent event);
+
+    void packetReceivedPlayerPosition(ENetEvent event, float dt);
+    void packetReceivedBulletShoot(ENetEvent event);
+
+    void updateTurrets(float dt);
+
+    // TerrainSegment generateNextSegment();
 
     void handleEnetService(float dt);
     void handleTypeConnect(ENetEvent event);
     void handleTypeReceive(ENetEvent event, float dt);
     void handleTypeDisconnect(ENetEvent event);
-    void sendNewId(ENetEvent event);
-    void onReceivePlayerPosition(ENetEvent event, float dt);
-    void onReceiveBulletShoot(ENetEvent event);
 
-    static double getNowSeconds();
-    double currentGameTime() const;
-    RemotePlayer *getPlayerByPeer(ENetPeer *peer);
+    // RemotePlayer *getPlayerByPeer(ENetPeer *peer);
 
     void checkPlayerCollision(RemotePlayer &player);
 
-    void broadcastPositions();                    // envoie positions à tous les clients
-    void broadcastWorldX();                       // envoie la position monde à tous les clients
-    void broadcastBullets(const ServerBullet &b); // envoie les tirs à tous les clients
     int findFreePlayerId();
 
     void killAndRespawn(RemotePlayer &p);

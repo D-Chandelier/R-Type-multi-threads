@@ -20,6 +20,9 @@ public:
 
     sf::IntRect getTextureRect(BlockVisual v);
 
+    // void generateNextSegment();
+    void generateNextSegmentAt(float startX);
+
     uint32_t levelSeed;
     uint32_t serverTick;
     float backgroundScrollSpeed;
@@ -32,6 +35,4 @@ public:
     std::mt19937 rng;
 
 private:
-    void generateNextSegment();
-    void generateNextSegmentAt(float startX);
 };

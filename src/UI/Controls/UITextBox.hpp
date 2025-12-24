@@ -4,8 +4,8 @@
 #include <string>
 #include <sstream>
 
-#include "../Core/Config.hpp"
-#include "../Core/Utils.hpp"
+#include "../../Core/Config.hpp"
+#include "../../Core/Utils.hpp"
 
 #undef min
 #undef max
@@ -95,7 +95,7 @@ struct UITextBox
         box.setSize({width, height});
         updateLayout();
     }
-    
+
     void setWidth(float w)
     {
         width = w;
@@ -191,7 +191,7 @@ struct UITextBox
         if (!focused)
             return;
 
-            // --- KEY BINDING ---
+        // --- KEY BINDING ---
         if (type == UITextBoxType::KEY)
         {
             if (auto *k = e.getIf<sf::Event::KeyPressed>())
@@ -259,7 +259,7 @@ private:
             totalSize.y = std::max(labelHeight, height);
 
             // Label
-            //label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
+            // label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
             label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
             // label.setPosition({position.x - origin.x - labelSpacing,
             //                    position.y - origin.y + totalSize.y * 0.5f});
@@ -356,12 +356,11 @@ private:
     void handleKey(sf::Keyboard::Scancode sc)
     {
         // Convertir la Key en Scancode puis en string
-        //sf::Keyboard::Scancode sc = sf::Keyboard::keyToScancode(k);
-        value = keyToString(sc);
+        // sf::Keyboard::Scancode sc = sf::Keyboard::keyToScancode(k);
+        value = Utils::keyToString(sc);
         scancodeKey = sc;
         updateLayout();
-        focused = false;    
-        
+        focused = false;
     }
 
     void handleFreeText(char c)

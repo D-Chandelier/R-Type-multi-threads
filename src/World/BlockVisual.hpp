@@ -14,11 +14,16 @@ enum class BlockVisual
 
     GroundFillLeft,
     GroundFillMid,
-    GroundFillRight
+    GroundFillRight,
+
+    BridgeLeft,
+    BridgeMid,
+    BridgeRight
 };
 
 struct TerrainBlock
 {
     sf::FloatRect rect;
     BlockVisual visual;
+    bool hasTurret = false;
 };

@@ -1,9 +1,9 @@
 ﻿#pragma once
-#include "Config.hpp"
+#include "../../Core/Config.hpp"
 #include "IMenu.hpp"
-#include "../UI/UITextBox.hpp"
-#include "../UI/UIButton.hpp"
-#include "Utils.hpp"
+#include "../Controls/UITextBox.hpp"
+#include "../Controls/UIButton.hpp"
+#include "../../Core/Utils.hpp"
 
 class MenuOption : public IMenu
 {

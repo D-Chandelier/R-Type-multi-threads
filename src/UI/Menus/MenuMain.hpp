@@ -1,12 +1,13 @@
 ﻿#pragma once
 #include "IMenu.hpp"
-#include "Config.hpp"
-#include "../UI/UIButton.hpp"
+#include "../../Core/Config.hpp"
+#include "../Controls/UIButton.hpp"
+#include <SFML/Graphics.hpp>
 
-class MenuInGame : public IMenu
+class MenuMain : public IMenu
 {
 public:
-    MenuInGame();
+    MenuMain();
 
     void update(float dt, sf::RenderWindow &w) override;
     void handleEvent(const sf::Event &e, sf::RenderWindow &w) override;
@@ -16,7 +17,7 @@ public:
     MenuAction getAction() const override { return action; };
 
 private:
-    sf::Text sousTitle;
-    UIButton resume, quit;
+    // sf::Text play, join, option;
+    UIButton play, join, option, quit;
     MenuAction action = MenuAction::NONE;
 };

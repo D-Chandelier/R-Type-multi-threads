@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <algorithm>
-#include "Config.hpp"
+#include "../../Core/Config.hpp"
 
 enum class MenuAction
 {
@@ -34,11 +34,16 @@ public:
     Background(const sf::Font &font)
         : title(font)
     {
+        init();
         title.setString(Config::Get().title);
         title.setCharacterSize(80);
         title.setOrigin(title.getLocalBounds().getCenter());
-        title.setPosition({Config::Get().windowSize.x / 2.f, Config::Get().windowSize.y / 10.f});
+    }
 
+    void init()
+    {
+        title.setPosition({Config::Get().windowSize.x / 2.f,
+                           Config::Get().windowSize.y / 10.f});
         stars.reserve(50);
         for (int i = 0; i < 50; i++)
         {
@@ -136,6 +141,7 @@ class IMenu
 public:
     virtual ~IMenu() = default;
 
+    void init();
     virtual void update(float dt, sf::RenderWindow &w) = 0;
     virtual void handleEvent(const sf::Event &, sf::RenderWindow &) = 0;
     virtual void draw(sf::RenderWindow &) = 0;

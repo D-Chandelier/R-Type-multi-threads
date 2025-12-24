@@ -31,28 +31,28 @@ MenuOption::MenuOption()
     tbPort.setMode(UITextBoxMode::LEFT);
     tbPort.setWidth(120);
     tbPort.setType(UITextBoxType::PORT);
-    tbPort.setPosition({cx - tbPort.getSize().x / 2, cy * 3- tbPort.getSize().y / 2});
+    tbPort.setPosition({cx - tbPort.getSize().x / 2, cy * 3 - tbPort.getSize().y / 2});
 
     // TextBox keyUp
-    tbKeyUp.setText(keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
+    tbKeyUp.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
     tbKeyUp.setLabel("Touche UP: ");
     tbKeyUp.setLabelSpacing(300.f);
     tbKeyUp.setMode(UITextBoxMode::LEFT);
     tbKeyUp.setWidth(120);
     tbKeyUp.setType(UITextBoxType::KEY);
-    tbKeyUp.setPosition({cx - tbKeyUp.getSize().x / 2, cy * 4- tbKeyUp.getSize().y / 2});
+    tbKeyUp.setPosition({cx - tbKeyUp.getSize().x / 2, cy * 4 - tbKeyUp.getSize().y / 2});
 
     // TextBox KeyDown
-    tbKeyDown.setText(keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
+    tbKeyDown.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
     tbKeyDown.setLabel("Touche DOWN: ");
     tbKeyDown.setLabelSpacing(300.f);
     tbKeyDown.setMode(UITextBoxMode::LEFT);
     tbKeyDown.setWidth(120);
     tbKeyDown.setType(UITextBoxType::KEY);
-    tbKeyDown.setPosition({cx - tbKeyDown.getSize().x / 2, cy * 5- tbKeyDown.getSize().y / 2});
+    tbKeyDown.setPosition({cx - tbKeyDown.getSize().x / 2, cy * 5 - tbKeyDown.getSize().y / 2});
 
     // TextBox keyLeft
-    tbKeyLeft.setText(keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
+    tbKeyLeft.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
     tbKeyLeft.setLabel("Touche LEFT: ");
     tbKeyLeft.setLabelSpacing(300.f);
     tbKeyLeft.setMode(UITextBoxMode::LEFT);
@@ -61,16 +61,16 @@ MenuOption::MenuOption()
     tbKeyLeft.setPosition({cx - tbKeyLeft.getSize().x / 2, cy * 6 - tbKeyLeft.getSize().y / 2});
 
     // TextBox keyRight
-    tbKeyRight.setText(keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
+    tbKeyRight.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
     tbKeyRight.setLabel("Touche RIGHT: ");
     tbKeyRight.setLabelSpacing(300.f);
     tbKeyRight.setMode(UITextBoxMode::LEFT);
     tbKeyRight.setWidth(120);
     tbKeyRight.setType(UITextBoxType::KEY);
-    tbKeyRight.setPosition({cx - tbKeyRight.getSize().x / 2, cy * 7- tbKeyRight.getSize().y / 2});
+    tbKeyRight.setPosition({cx - tbKeyRight.getSize().x / 2, cy * 7 - tbKeyRight.getSize().y / 2});
 
     // TextBox keyFire
-    tbKeyFire.setText(keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
+    tbKeyFire.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
     tbKeyFire.setLabel("Touche FIRE: ");
     tbKeyFire.setLabelSpacing(300.f);
     tbKeyFire.setMode(UITextBoxMode::LEFT);
@@ -131,12 +131,12 @@ void MenuOption::reset()
     action = MenuAction::NONE;
     tbPort.value = std::to_string(Config::Get().serverPort);
 
-    tbKeyUp.value       = keyToString(sf::Keyboard::delocalize(Config::Get().keys.up));
-    tbKeyDown.value     = keyToString(sf::Keyboard::delocalize(Config::Get().keys.down));
-    tbKeyLeft.value     = keyToString(sf::Keyboard::delocalize(Config::Get().keys.left));
-    tbKeyRight.value    = keyToString(sf::Keyboard::delocalize(Config::Get().keys.right));
-    tbKeyFire.value     = keyToString(sf::Keyboard::delocalize(Config::Get().keys.fire));
-    
+    tbKeyUp.value = Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up));
+    tbKeyDown.value = Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.down));
+    tbKeyLeft.value = Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.left));
+    tbKeyRight.value = Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.right));
+    tbKeyFire.value = Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.fire));
+
     cursorTimer = 0.f;
     cursorVisible = true;
 }
@@ -192,7 +192,7 @@ void MenuOption::handleEvent(const sf::Event &e, sf::RenderWindow &w)
             try
             {
                 Config::Get().serverPort = static_cast<uint16_t>(std::stoi(tbPort.value));
-                Config::Get().keys.up = sf::Keyboard::localize(tbKeyUp.scancodeKey); 
+                Config::Get().keys.up = sf::Keyboard::localize(tbKeyUp.scancodeKey);
                 Config::Get().keys.down = sf::Keyboard::localize(tbKeyDown.scancodeKey);
                 Config::Get().keys.left = sf::Keyboard::localize(tbKeyLeft.scancodeKey);
                 Config::Get().keys.right = sf::Keyboard::localize(tbKeyRight.scancodeKey);

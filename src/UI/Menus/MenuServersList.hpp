@@ -3,11 +3,11 @@
 #include <thread>
 #include <mutex>
 
-#include "../Network/Client.hpp"
-#include "../Network/NetworkDiscovery.hpp"
-#include "../UI/UITextBox.hpp"
-#include "../UI/UIButton.hpp"
-#include "Config.hpp"
+#include "../../Network/Client/Client.hpp"
+#include "../../Network/Protocols/NetworkDiscovery.hpp"
+#include "../Controls/UITextBox.hpp"
+#include "../Controls/UIButton.hpp"
+#include "../../Core/Config.hpp"
 #include "IMenu.hpp"
 
 class MenuServersList : public IMenu

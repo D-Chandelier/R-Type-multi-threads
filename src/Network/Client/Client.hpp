@@ -7,16 +7,16 @@
 #include <mutex>
 #include <atomic>
 
-#include "../Core/Config.hpp"
-#include "../World/Terrain.hpp"
-#include "Packets/Packets.hpp"
+#include "../../Core/Config.hpp"
+#include "../../World/Terrain.hpp"
 
-#include "../Entities/RemotePlayers.hpp"
-#include "../Entities/Player.hpp"
-#include "../Entities/Bullet.hpp"
-#include "NetworkDiscovery.hpp"
+#include "../../Entities/RemotePlayers.hpp"
+#include "../../Entities/Player.hpp"
+#include "../../Entities/Bullet.hpp"
+#include "../Protocols/Packets/Packets.hpp"
+#include "../Protocols/NetworkDiscovery.hpp"
 
-#include "../Core/Utils.hpp"
+#include "../../Core/Utils.hpp"
 
 enum class ClientState
 {
@@ -32,7 +32,7 @@ public:
     ~Client();
 
     // void reset();
-    bool connectTo(const char *host, uint16_t port);
+    bool start(const char *host, uint16_t port);
     void update(float dt);
     void stop();
     bool init();
@@ -42,18 +42,17 @@ public:
     void handleTypeReceive(ENetEvent event);
     void handleTypeDisconnect(ENetEvent event);
 
-    void eventReceiveId(ENetEvent event);
-    void eventReceivePlayersPositions(ENetEvent event);
-    void eventReceiveBullets(ENetEvent event);
-    void eventReceiveInitLevel(ENetEvent event);
-    void eventReceiveWorldX(ENetEvent event);
-    void onReceiveSegment(ENetEvent &event);
-    void onReceiveAllSegments(ENetEvent &event);
+    void packetReceivedId(ENetEvent event);
+    void packetReceivedPlayersPositions(ENetEvent event);
+    void packetReceivedBullets(ENetEvent event);
+    void packetReceivedInitLevel(ENetEvent event);
+    void packetReceivedWorldX(ENetEvent event);
+    void packetReceivedSegment(ENetEvent &event);
+    void packetReceivedAllSegments(ENetEvent &event);
 
-    void sendPosition();
-    void sendBullets();
+    void packetSendPosition();
+    void packetSendBullets();
 
-    double localTimeNow() const;
     ClientState getState() const { return ConnexionState; }
 
     ENetHost *clientHost;

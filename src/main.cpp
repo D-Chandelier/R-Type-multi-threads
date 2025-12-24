@@ -1,10 +1,11 @@
 ﻿#include <SFML/Graphics.hpp>
-#include "Core/Game.hpp"
+#include "Core/Game/Game.hpp"
 #include <cmath>
 
 int main()
 {
-    if (enet_initialize() != 0) {
+    if (enet_initialize() != 0)
+    {
         std::cerr << "ENet init failed\n";
         return 1;
     }

@@ -3,8 +3,9 @@
 #include <string>
 #include <iostream>
 
-constexpr float BACKGROUND_SCROLL_SPEED = 20.f;
-
+constexpr float BACKGROUND_SCROLL_SPEED = 40.f;
+constexpr float LEVEL_SCROLL_SPEED = 400.f; // 100.f
+constexpr float PLAYER_SCROLL_SPEED = 120.f;
 struct KeyBindings
 {
     sf::Keyboard::Key up = sf::Keyboard::Key::Up; // sf::Keyboard::Key::Up;
@@ -45,11 +46,14 @@ public:
     uint16_t discoveryPort = serverPort + 1;
     uint16_t maxPlayers = 4;
     bool isServer = false;
-    float speed = 300.f;
+    float speed = PLAYER_SCROLL_SPEED;
     uint32_t frameRate = 120; // FPS / Hz
 
-    sf::Texture texture;
+    sf::Texture playerTexture;
     sf::Texture blockTexture;
+    sf::Texture turretTexture;
+    sf::Texture bckgTextureBack, bckgTextureFront;
+
     sf::Vector2f playerScale = {2.f, 2.f};
     sf::FloatRect playerArea;
 
@@ -60,12 +64,21 @@ private:
     {
         if (!font.openFromFile("assets/kenvector_future_thin.ttf"))
             std::cerr << "[CONFIG] Impossible de charger la font\n";
-        if (!texture.loadFromFile("assets/r-typesheet42.gif"))
+        if (!playerTexture.loadFromFile("assets/r-typesheet42.gif"))
             std::cerr << "[CONFIG] Impossible de charger r-typesheet42.gif\n";
         if (!blockTexture.loadFromFile("assets/world_01_192x192.png"))
             std::cerr << "[CONFIG] Impossible de charger world_01_192x192.png\n";
+        if (!turretTexture.loadFromFile("assets/turret_02_96x32.png"))
+            std::cerr << "[CONFIG] Impossible de charger turret_02_96x32.png\n";
+        if (!bckgTextureBack.loadFromFile("assets/Blue_Nebula_08-1024x1024.png"))
+            std::cerr << "[CONFIG] Impossible de charger Starfield_07-1024x1024.png\n";
+        if (!bckgTextureFront.loadFromFile("assets/Starfield_07-1024x1024.png"))
+            std::cerr << "[CONFIG] Impossible de charger Blue_Nebula_08-1024x1024.png\n";
 
-        playerArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(texture.getSize().x / 5), static_cast<float>(texture.getSize().y / 5)}};
+        bckgTextureBack.setRepeated(true);
+        bckgTextureFront.setRepeated(true);
+
+        playerArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(playerTexture.getSize().x / 5), static_cast<float>(playerTexture.getSize().y / 5)}};
         gameArea = sf::FloatRect{{0.f, 0.f}, {static_cast<float>(windowSize.x), static_cast<float>(windowSize.y)}};
     }
 };

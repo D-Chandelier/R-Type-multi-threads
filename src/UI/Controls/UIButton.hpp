@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <functional>
-#include "../Core/Config.hpp"
+#include "../../Core/Config.hpp"
 
 class UIButton
 {

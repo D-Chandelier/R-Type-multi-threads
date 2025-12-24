@@ -1,6 +1,9 @@
 ﻿#pragma once
+#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <enet/enet.h>
+
+#include "../Core/Config.hpp"
 
 struct RemotePlayer
 {

@@ -4,6 +4,7 @@
 #include <SFML/System/String.hpp>
 #include <string>
 #include "../Entities/RemotePlayers.hpp"
+#include "Config.hpp"
 
 // std::string getLocalIpAddress()
 // {
@@ -14,19 +15,39 @@
 //     return optIp->toString();
 // }
 
-static double localTimeNow()
+namespace Utils
 {
-    using namespace std::chrono;
-    return duration<double>(steady_clock::now().time_since_epoch()).count();
-}
-static std::string keyToString(sf::Keyboard::Scancode k)
-{
-    return sf::Keyboard::getDescription(k).toAnsiString(); // SFML >= 2.6
-}
-static RemotePlayer *getLocalPlayer(std::map<int, RemotePlayer> &p)
-{
-    auto it = p.find(Config::Get().playerId);
-    if (it != p.end())
-        return &it->second;
-    return nullptr;
+    inline double localTimeNow()
+    {
+        using namespace std::chrono;
+        return duration<double>(steady_clock::now().time_since_epoch()).count();
+    }
+
+    inline double currentGameTime(double start)
+    {
+        return localTimeNow() - start;
+    }
+
+    inline std::string keyToString(sf::Keyboard::Scancode k)
+    {
+        return sf::Keyboard::getDescription(k).toAnsiString(); // SFML >= 2.6
+    }
+
+    inline RemotePlayer *getLocalPlayer(std::map<int, RemotePlayer> &p)
+    {
+        auto it = p.find(Config::Get().playerId);
+        if (it != p.end())
+            return &it->second;
+        return nullptr;
+    }
+
+    inline RemotePlayer *getPlayerByPeer(ENetPeer *peer, std::map<int, RemotePlayer> &allPlayers)
+    {
+        for (auto &[id, player] : allPlayers)
+        {
+            if (player.peer == peer)
+                return &player;
+        }
+        return nullptr;
+    }
 }

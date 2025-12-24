@@ -1,7 +1,6 @@
 ﻿#include "MenuMain.hpp"
 
 MenuMain::MenuMain()
-// quit(Config::Get().font)
 {
     float cx = Config::Get().windowSize.x / 2.f;
     float cy = Config::Get().windowSize.y / 10.f;
