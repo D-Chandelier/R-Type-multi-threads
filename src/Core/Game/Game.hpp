@@ -13,6 +13,8 @@
 #include "../../Network/Protocols/NetworkDiscovery.hpp"
 #include "../../World/Terrain.hpp"
 
+#include "../../Entities/Bullet.hpp"
+
 #include "../Utils.hpp"
 
 class Game
@@ -37,6 +39,8 @@ public:
     void drawPlayers();
     void drawBullets();
     void drawTurrets();
+    void drawPlayersHUD();
+    void drawGameOverUI();
 
     void handleEvent();
     void handleMenuAction();

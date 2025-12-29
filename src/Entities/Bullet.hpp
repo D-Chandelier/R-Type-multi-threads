@@ -8,6 +8,9 @@ enum class BulletType
     ENEMY
 };
 
+constexpr float BULLET_HEIGHT = 5.f;
+constexpr float BULLET_WIDTH = 10.f;
+
 struct Bullet
 {
     uint32_t id;
@@ -16,15 +19,5 @@ struct Bullet
     uint8_t ownerId;
     bool active = true;
 
-    void update(float dt)
-    {
-        position += velocity * dt;
-
-        // Exemple destruction hors écran
-        if (position.x < -50 || position.x > Config::Get().windowSize.x + 50 ||
-            position.y < -50 || position.y > Config::Get().windowSize.y + 50)
-        {
-            active = false;
-        }
-    }
+    void update(float dt);
 };

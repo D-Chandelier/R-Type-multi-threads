@@ -19,6 +19,7 @@ void Game::updateGameplay(float dt)
     updateBackgrounds();
     updatePlayers();
     updateBullets(dt);
+    // client.allTurrets.swap(client.allTurretsTmp);
 }
 
 void Game::updateBackgrounds()
@@ -63,81 +64,66 @@ void Game::updateBackgrounds()
         backgroundVA_2[i].color = alphaColor; // 50% transparent
 }
 
-// void Game::updateTerrain()
-// {
-//     // Interpolation pour smooth scrolling
-//     double delta = localTimeNow() - client.serverGameTime;
-//     float alpha = static_cast<float>(delta / (1.0f / Config::Get().frameRate));
-//     alpha = std::clamp(alpha, 0.f, 1.f);
-
-//     client.terrain.worldX += (client.targetWorldX - client.terrain.worldX) * alpha;
-
-//     // Nettoyage segments déjà passés (optionnel)
-//     while (!client.terrain.segments.empty() &&
-//            client.terrain.segments.front().startX + SEGMENT_WIDTH < client.terrain.worldX - 100.f)
-//     {
-//         client.terrain.segments.pop_front();
-//     }
-// }
-
 void Game::updatePlayers()
 {
-    int i = 0;
-    int cellWidth, cellHeight;
-
-    playersVA.resize(client.allPlayers.size() * 6);
+    playersVA.clear();
+    // playersVA.setPrimitiveType(sf::Triangles);
 
     for (auto &[id, p] : client.allPlayers)
     {
+        if (p.pv <= 0.f)
+        {
+            p.state = RemotePlayerState::GameOver;
+            continue;
+        }
+        p.state = RemotePlayerState::Playing;
+
         bool visible = true;
+
         if (p.invulnerable)
         {
             double t = Utils::localTimeNow() - p.respawnTime;
             visible = static_cast<int>(t * 10) % 2 == 0; // 10 Hz
         }
-        if (!visible)
-            continue; // ne pas dessiner ce frame
 
-        // Temps écoulé depuis la dernière position serveur
+        if (!visible)
+            continue;
+
+        // interpolation
         double delta = Utils::localTimeNow() - p.lastUpdateTime;
-        // Interpolation simple
-        float alpha = static_cast<float>(delta / (2.f / Config::Get().frameRate)); // delta / tick serveur (xx ms)
+        float alpha = static_cast<float>(delta / (1.f / Config::Get().frameRate));
         alpha = std::clamp(alpha, 0.f, 1.f);
 
-        // p.position = p.serverPosition; // reset avant lerp
         p.position += (p.serverPosition - p.position) * alpha;
 
-        cellWidth = Config::Get().playerArea.size.x;
-        cellHeight = Config::Get().playerArea.size.y;
+        float w = p.getBounds().size.x;
+        float h = p.getBounds().size.y;
+        float x = p.getBounds().position.x;
+        float y = p.getBounds().position.y;
 
-        sf::Vector2f origin = p.position; // getOrigine();
-        sf::Vector2f scale = Config::Get().playerScale;
-        float w = p.getBounds().size.x; // static_cast<float>(cellWidth) * scale.x;
-        float h = p.getBounds().size.y; // static_cast<float>(cellHeight) * scale.y;
+        sf::Vertex quad[6];
 
-        float x = p.getBounds().position.x; // p.position.x; //(p.position.x - origin.x * scale.x);
-        float y = p.getBounds().position.y; //(p.position.y - origin.y * scale.y);
+        quad[0].position = {x, y};
+        quad[1].position = {x + w, y};
+        quad[2].position = {x + w, y + h};
+        quad[3].position = {x, y};
+        quad[4].position = {x + w, y + h};
+        quad[5].position = {x, y + h};
 
-        // positions du quad (2 triangles)
-        playersVA[i * 6 + 0].position = {x, y};
-        playersVA[i * 6 + 1].position = {x + w, y};
-        playersVA[i * 6 + 2].position = {x + w, y + h};
+        float cellW = Config::Get().playerArea.size.x;
+        float cellH = Config::Get().playerArea.size.y;
+        float tx = 2 * cellW;
+        float ty = id * cellH;
 
-        playersVA[i * 6 + 3].position = {x, y};
-        playersVA[i * 6 + 4].position = {x + w, y + h};
-        playersVA[i * 6 + 5].position = {x, y + h};
+        quad[0].texCoords = {tx, ty};
+        quad[1].texCoords = {tx + cellW, ty};
+        quad[2].texCoords = {tx + cellW, ty + cellH};
+        quad[3].texCoords = {tx, ty};
+        quad[4].texCoords = {tx + cellW, ty + cellH};
+        quad[5].texCoords = {tx, ty + cellH};
 
-        // texCoords selon sprite dans spritesheet
-        float tx = 2 * cellWidth;
-        float ty = id * cellHeight;
-        playersVA[i * 6 + 0].texCoords = {tx, ty};
-        playersVA[i * 6 + 1].texCoords = {tx + cellWidth, ty};
-        playersVA[i * 6 + 2].texCoords = {tx + cellWidth, ty + cellHeight};
-        playersVA[i * 6 + 3].texCoords = {tx, ty};
-        playersVA[i * 6 + 4].texCoords = {tx + cellWidth, ty + cellHeight};
-        playersVA[i * 6 + 5].texCoords = {tx, ty + cellHeight};
-
-        i++;
+        for (int i = 0; i < 6; ++i)
+            playersVA.append(quad[i]);
     }
 }
 

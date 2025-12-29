@@ -93,7 +93,7 @@ void Server::packetSendSegment(const TerrainSegment &seg, ENetPeer *peer)
 
 void Server::packetSendNewId(ENetEvent event)
 {
-    int newId = findFreePlayerId();
+    uint32_t newId = Utils::findFreePlayerId(allPlayers);
     ServerAssignIdPacket p;
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
     p.header.code = static_cast<uint8_t>(ServerMsg::ASSIGN_ID);

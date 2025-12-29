@@ -4,11 +4,12 @@
 #include <iostream>
 
 constexpr float BACKGROUND_SCROLL_SPEED = 40.f;
-constexpr float LEVEL_SCROLL_SPEED = 400.f; // 100.f
-constexpr float PLAYER_SCROLL_SPEED = 120.f;
+constexpr float LEVEL_SCROLL_SPEED = 400.f; // 180.f
+constexpr float PLAYER_SCROLL_SPEED = 70.f; // 120
+constexpr float FRAMERATE = 120.f;          // 120
 struct KeyBindings
 {
-    sf::Keyboard::Key up = sf::Keyboard::Key::Up; // sf::Keyboard::Key::Up;
+    sf::Keyboard::Key up = sf::Keyboard::Key::Up;
     sf::Keyboard::Key down = sf::Keyboard::Key::Down;
     sf::Keyboard::Key left = sf::Keyboard::Key::Left;
     sf::Keyboard::Key right = sf::Keyboard::Key::Right;
@@ -39,7 +40,7 @@ public:
 
     KeyBindings keys;
 
-    int playerId = -1;
+    uint32_t playerId = -1;
     std::string playerName = "001";
     std::string serverIp = "127.0.0.1";
     uint16_t serverPort = 1234;
@@ -47,7 +48,7 @@ public:
     uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = PLAYER_SCROLL_SPEED;
-    uint32_t frameRate = 120; // FPS / Hz
+    uint32_t frameRate = FRAMERATE; // FPS / Hz
 
     sf::Texture playerTexture;
     sf::Texture blockTexture;

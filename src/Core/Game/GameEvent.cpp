@@ -133,6 +133,15 @@ void Game::handleEventPlayerMove(float dt)
 
     if (RemotePlayer *p = Utils::getLocalPlayer(client.allPlayers))
     {
+        if (p->state == RemotePlayerState::GameOver)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Enter))
+            {
+                // ToDo
+                client.packedSendRejoin();
+            }
+            return;
+        }
         // --- Mouvement ---
         bool left = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
         bool right = sf::Keyboard::isKeyPressed(Config::Get().keys.right);

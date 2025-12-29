@@ -53,7 +53,10 @@ void Client::stop()
 
 void Client::update(float dt)
 {
-    std::lock_guard<std::mutex> lock(mtx);
     handleEnetService();
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        // applyNetworkState(); // copie netPlayers → players
+    }
     packetSendPosition();
 }

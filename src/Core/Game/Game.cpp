@@ -9,6 +9,9 @@ Game::Game()
       menuInGame(),
       menuBackground(Config::Get().font)
 {
+    window.setFramerateLimit(Config::Get().frameRate);
+    window.setVerticalSyncEnabled(true);
+
     currentMenu = &menuMain;
 
     playersVA.setPrimitiveType(sf::PrimitiveType::Triangles);
@@ -78,11 +81,13 @@ void Game::runClient()
 
         client.update(dt);
 
-        float sleepTime = targetFrameTime - dt;
-        if (sleepTime > 0.f)
-        {
-            std::this_thread::sleep_for(std::chrono::duration<float>(targetFrameTime));
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        // float sleepTime = targetFrameTime - dt;
+        // if (sleepTime > 0.f)
+        // {
+        //     std::this_thread::sleep_for(std::chrono::duration<float>(sleepTime)); //targetFrameTime
+        // }
     }
 }
 

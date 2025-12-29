@@ -49,3 +49,20 @@ void Client::packetSendBullets()
         enet_peer_send(peer, 0, packet);
     }
 }
+
+void Client::packedSendRejoin()
+{
+    if (Config::Get().playerId < 0 || Config::Get().playerId > Config::Get().maxPlayers)
+        return;
+
+    if (peer)
+    {
+        ClientRejoinPacket p;
+        p.header.type = static_cast<uint8_t>(PacketType::CLIENT_MSG);
+        p.header.code = static_cast<uint8_t>(ClientMsg::REJOIN);
+        p.id = Config::Get().playerId;
+
+        ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE); // Un tir ne doit jamais être perdu.
+        enet_peer_send(peer, 0, packet);
+    }
+}

@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <SFML/Graphics.hpp>
 
+#include "Turret.hpp"
+
 constexpr std::size_t MAX_PLAYER = 32;
 
 enum class PacketType : uint8_t
@@ -16,7 +18,8 @@ enum class ClientMsg : uint8_t
     REQUEST_NEW_GAME,
     REQUEST_JOIN_GAME,
     PLAYER_POSITION,
-    BULLET_SHOOT
+    BULLET_SHOOT,
+    REJOIN
 };
 
 enum class ServerMsg : uint8_t
@@ -31,7 +34,10 @@ enum class ServerMsg : uint8_t
     INIT_LEVEL,
     WORLD_X_UPDATE,
     NEW_SEGMENT,
-    ALL_SEGMENTS
+    ALL_SEGMENTS,
+    TURRET,
+    TURRET_DESTROYED,
+    BULLET_DESTROYED
 };
 
 ///////////////////////////////////////////////////////:
@@ -46,12 +52,14 @@ struct PacketHeader
 
 struct PlayerState
 {
-    int id;
+    uint32_t id;
     float x;
     float y;
     bool alive;
     bool invulnerable;
     double respawnTime;
+    float score;
+    float pv;
 };
 
 struct ServerBullet
@@ -60,7 +68,7 @@ struct ServerBullet
     sf::Vector2f position;
     sf::Vector2f velocity;
     float damage;
-    uint8_t ownerId;
+    uint32_t ownerId;
     bool active = true;
 };
 
@@ -74,7 +82,7 @@ struct ServerAssignIdPacket
 struct ClientPositionPacket
 {
     PacketHeader header;
-    int id;
+    uint32_t id;
     // float x;
     // float y;
     float velX;
@@ -84,9 +92,15 @@ struct ClientPositionPacket
 struct ClientBulletPacket
 {
     PacketHeader header;
-    int ownerId;
+    uint32_t ownerId;
     float x, y;
     float velX, velY;
+};
+
+struct ClientRejoinPacket
+{
+    PacketHeader header;
+    uint32_t id;
 };
 
 struct ServerPositionPacket
@@ -94,9 +108,6 @@ struct ServerPositionPacket
     PacketHeader header;
     uint8_t playerCount;
     PlayerState players[MAX_PLAYER];
-    bool alive;
-    bool invulnerable;
-    double respawnTime;
 
     double serverGameTime; // temps serveur actuel
     float scrollSpeed;
@@ -108,6 +119,18 @@ struct ServerBulletPacket
     float x, y;
     float velX, velY;
     uint8_t ownerId;
+};
+
+struct ServerBulletDestroyedPacket
+{
+    PacketHeader header;
+    uint16_t bulletIndex;
+};
+
+struct ServerTurretDestroyedPacket
+{
+    PacketHeader header;
+    uint16_t turretIndex;
 };
 
 struct InitLevelPacket
@@ -184,9 +207,9 @@ struct ServerAllSegmentsBlockPacket
     bool hasTurret;
 };
 
-struct ServerTurretPacket
-{
-    float x, y;
-};
+// struct ServerTurretPacket
+// {
+//     float x, y;
+// };
 
 #pragma pack(pop)

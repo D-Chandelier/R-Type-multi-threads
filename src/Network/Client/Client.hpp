@@ -11,7 +11,7 @@
 #include "../../World/Terrain.hpp"
 
 #include "../../Entities/RemotePlayers.hpp"
-#include "../../Entities/Player.hpp"
+#include "../../Entities/Turret.hpp"
 #include "../../Entities/Bullet.hpp"
 #include "../Protocols/Packets/Packets.hpp"
 #include "../Protocols/NetworkDiscovery.hpp"
@@ -49,9 +49,13 @@ public:
     void packetReceivedWorldX(ENetEvent event);
     void packetReceivedSegment(ENetEvent &event);
     void packetReceivedAllSegments(ENetEvent &event);
+    void packetReceivedTurretDestroyed(ENetEvent &event);
+    void packetReceivedBulletDestroyed(ENetEvent &event);
+    void packetReceivedTurrets(ENetEvent &event);
 
     void packetSendPosition();
     void packetSendBullets();
+    void packedSendRejoin();
 
     ClientState getState() const { return ConnexionState; }
 
@@ -59,7 +63,8 @@ public:
     ENetPeer *peer;
 
     // Player localPlayer;
-    std::map<int, RemotePlayer> allPlayers;
+    std::map<uint32_t, RemotePlayer> allPlayers;
+    std::unordered_map<uint32_t, Turret> allTurrets, allTurretsTmp;
     std::unordered_map<uint32_t, Bullet> allBullets;
 
     Terrain terrain;
@@ -72,5 +77,7 @@ public:
 
 private:
     std::mutex mtx;
+    std::mutex turretMutex;
+
     ClientState ConnexionState;
 };

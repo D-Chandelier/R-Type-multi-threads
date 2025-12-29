@@ -56,6 +56,16 @@ void Client::handleTypeReceive(ENetEvent event)
             case static_cast<uint8_t>(ServerMsg::ALL_SEGMENTS):
                 packetReceivedAllSegments(event);
                 break;
+            case static_cast<uint8_t>(ServerMsg::TURRET_DESTROYED):
+                packetReceivedTurretDestroyed(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::BULLET_DESTROYED):
+                packetReceivedBulletDestroyed(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::TURRET):
+                packetReceivedTurrets(event);
+                break;
+
             default:
                 return;
             }

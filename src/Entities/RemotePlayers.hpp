@@ -1,30 +1,49 @@
 ﻿#pragma once
 #include <SFML/Graphics.hpp>
+#include <map>
 #include <iostream>
 #include <enet/enet.h>
+// #include <cstdint>
 
 #include "../Core/Config.hpp"
 
+static const std::array<sf::Color, 4> PlayerColors =
+    {
+        sf::Color(70, 130, 255), // Joueur 1 : bleu
+        sf::Color(160, 90, 200), // Joueur 2 : violet
+        sf::Color(90, 200, 120), // Joueur 3 : vert
+        sf::Color(220, 80, 80)   // Joueur 4 : rouge
+};
+
+enum class RemotePlayerState
+{
+    Playing,
+    GameOver
+};
 struct RemotePlayer
 {
-    int id;
-
+    uint32_t id;
+    RemotePlayerState state = RemotePlayerState::Playing;
     sf::Vector2f position;
     sf::Vector2f velocity;
     sf::Vector2f size;
 
     sf::Vector2f serverPosition;
 
-    float bulletSpeed = 500.f;
-    float bulletDamage = 10.f;
-    float lerpFactor = 0.3f; // fluidité du mouvement, 0 = pas de mouvement, 1 = téléport
     double lastShootTime = 0.0;
     float fireRate = 4.f; // tirs par seconde
+    float bulletSpeed = 500.f;
+    float bulletDamage = 1.f;
+
+    float lerpFactor = 0.3f; // fluidité du mouvement, 0 = pas de mouvement, 1 = téléport
+
+    float score = 0.f;
 
     bool alive = true;
+    float pv = 3.f;
+    float maxPv = 3.f;
     bool invulnerable = false;
     double respawnTime = 0.0;
-
     double lastUpdateTime = 0.0;
 
     ENetPeer *peer = nullptr;
@@ -36,10 +55,4 @@ struct RemotePlayer
             {Config::Get().playerArea.size.x * Config::Get().playerScale.x,
              Config::Get().playerArea.size.y * Config::Get().playerScale.y}};
     }
-    // sf::Vector2f getOrigine() const
-    // {
-    //     return {
-    //         Config::Get().playerArea.size.x * Config::Get().playerScale.x * 0.5f,
-    //         Config::Get().playerArea.size.y * Config::Get().playerScale.y * 0.5f};
-    // }
 };

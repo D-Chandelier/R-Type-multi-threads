@@ -43,6 +43,9 @@ void Server::handleTypeReceive(ENetEvent event, float dt)
     case static_cast<uint8_t>(ClientMsg::BULLET_SHOOT):
         packetReceivedBulletShoot(event);
         break;
+    case static_cast<uint8_t>(ClientMsg::REJOIN):
+        packetReceivedRejoin(event);
+        break;
     default:
         return;
     }

@@ -192,9 +192,9 @@ namespace Segments
         {
             if (blk.hasTurret)
             {
-                // Position de la tourelle : centre du bloc
-                sf::Vector2f turretPos = blk.rect.position + sf::Vector2f(TILE / 2.f, TILE / 2.f);
-                seg.turrets.emplace_back(turretPos);
+                // // Position de la tourelle : centre du bloc
+                // sf::Vector2f turretPos = blk.rect.position + sf::Vector2f(TILE / 2.f, TILE / 2.f);
+                // seg.turrets.emplace_back(turretPos);
             }
         }
         // seg.blocks[seg.blocks.size() / 2].hasTurret = true;

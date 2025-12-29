@@ -101,6 +101,33 @@ void Client::packetReceivedSegment(ENetEvent &event)
     terrain.segments.push_back(seg);
 }
 
+void Client::packetReceivedTurrets(ENetEvent &event)
+{
+    if (event.packet->dataLength != sizeof(ServerTurretsPacket))
+        return;
+
+    const auto *p = reinterpret_cast<const ServerTurretsPacket *>(event.packet->data);
+
+    std::unordered_map<uint32_t, Turret> newTurrets;
+    newTurrets.reserve(p->turretCount);
+
+    for (uint8_t i = 0; i < p->turretCount; ++i)
+    {
+        const auto &s = p->turret[i];
+
+        Turret t({s.x, s.y});
+        t.velocity = {s.velX, s.velY};
+        t.active = s.isActive;
+
+        newTurrets.emplace(s.id, t);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(turretMutex);
+        allTurrets.swap(newTurrets);
+    }
+}
+
 void Client::packetReceivedPlayersPositions(ENetEvent event)
 {
     if (event.packet->dataLength != sizeof(ServerPositionPacket))
@@ -108,11 +135,11 @@ void Client::packetReceivedPlayersPositions(ENetEvent event)
 
     auto *p = reinterpret_cast<ServerPositionPacket *>(event.packet->data);
 
-    std::unordered_set<int> seenIds;
+    std::unordered_set<uint32_t> seenIds;
 
     for (int i = 0; i < p->playerCount; i++)
     {
-        int pid = p->players[i].id;
+        uint32_t pid = p->players[i].id;
 
         seenIds.insert(pid);
 
@@ -121,9 +148,11 @@ void Client::packetReceivedPlayersPositions(ENetEvent event)
         rp.lastUpdateTime = p->serverGameTime;
         rp.serverPosition.x = p->players[i].x;
         rp.serverPosition.y = p->players[i].y;
-        rp.alive = p->alive;
-        rp.invulnerable = p->invulnerable;
-        rp.respawnTime = p->respawnTime;
+        rp.alive = p->players[i].alive;
+        rp.invulnerable = p->players[i].invulnerable;
+        rp.respawnTime = p->players[i].respawnTime;
+        rp.score = p->players[i].score;
+        rp.pv = p->players[i].pv;
     }
 
     // Supprimer uniquement les joueurs distants qui ne sont plus dans le snapshot
@@ -167,8 +196,35 @@ void Client::packetReceivedId(ENetEvent event)
     auto *p = reinterpret_cast<ServerAssignIdPacket *>(event.packet->data);
 
     allPlayers[p->id].id = p->id;
-    Config::Get().playerId = static_cast<int>(p->id);
+    Config::Get().playerId = static_cast<uint32_t>(p->id);
     ConnexionState = ClientState::CONNECTED;
 
     std::cout << "[Client] received(ASSIGN_ID): [" << Utils::getLocalPlayer(allPlayers)->id << "] \n";
+}
+
+void Client::packetReceivedTurretDestroyed(ENetEvent &event)
+{
+    if (event.packet->dataLength != sizeof(ServerTurretDestroyedPacket))
+        return;
+
+    auto *p = reinterpret_cast<ServerTurretDestroyedPacket *>(event.packet->data);
+
+    auto it = allTurrets.find(p->turretIndex);
+    if (it != allTurrets.end())
+    {
+        it->second.active = false;
+    }
+}
+
+void Client::packetReceivedBulletDestroyed(ENetEvent &event)
+{
+    if (event.packet->dataLength != sizeof(ServerBulletDestroyedPacket))
+        return;
+
+    auto *p = reinterpret_cast<ServerBulletDestroyedPacket *>(event.packet->data);
+    auto it = allBullets.find(p->bulletIndex);
+    if (it != allBullets.end())
+    {
+        it->second.active = false;
+    }
 }

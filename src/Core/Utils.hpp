@@ -1,19 +1,14 @@
 ﻿#pragma once
-#include <SFML/Network.hpp>
-#include <SFML/Window/Keyboard.hpp>
-#include <SFML/System/String.hpp>
+
+#include <map>
 #include <string>
-#include "../Entities/RemotePlayers.hpp"
+#include <chrono>
+
+#include <SFML/Window/Keyboard.hpp>
+#include <enet/enet.h>
+
 #include "Config.hpp"
-
-// std::string getLocalIpAddress()
-// {
-//     auto optIp = sf::IpAddress::getLocalAddress();
-//     if (!optIp.has_value())
-//         return "0.0.0.0"; // ou "" selon ton besoin
-
-//     return optIp->toString();
-// }
+#include "../Entities/RemotePlayers.hpp"
 
 namespace Utils
 {
@@ -33,7 +28,7 @@ namespace Utils
         return sf::Keyboard::getDescription(k).toAnsiString(); // SFML >= 2.6
     }
 
-    inline RemotePlayer *getLocalPlayer(std::map<int, RemotePlayer> &p)
+    inline RemotePlayer *getLocalPlayer(std::map<uint32_t, RemotePlayer> &p)
     {
         auto it = p.find(Config::Get().playerId);
         if (it != p.end())
@@ -41,7 +36,7 @@ namespace Utils
         return nullptr;
     }
 
-    inline RemotePlayer *getPlayerByPeer(ENetPeer *peer, std::map<int, RemotePlayer> &allPlayers)
+    inline RemotePlayer *getPlayerByPeer(ENetPeer *peer, std::map<uint32_t, RemotePlayer> &allPlayers)
     {
         for (auto &[id, player] : allPlayers)
         {
@@ -49,5 +44,15 @@ namespace Utils
                 return &player;
         }
         return nullptr;
+    }
+
+    inline uint32_t findFreePlayerId(std::map<uint32_t, RemotePlayer> &allPlayers)
+    {
+        for (uint32_t id = 0; id < Config::Get().maxPlayers; ++id)
+        {
+            if (allPlayers.find(id) == allPlayers.end())
+                return id;
+        }
+        return 100; // aucun slot libre
     }
 }
