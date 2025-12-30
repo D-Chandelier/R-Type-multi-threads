@@ -8,7 +8,7 @@ struct TurretState
     uint32_t id;
     float x, y;
     float velX, velY;
-    bool isActive;
+    int isActive;
 };
 
 struct ServerTurretsPacket

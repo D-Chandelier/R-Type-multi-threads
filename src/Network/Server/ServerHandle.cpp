@@ -15,7 +15,9 @@ void Server::handleEnetService(float dt)
             enet_packet_destroy(event.packet);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
+            // case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             handleTypeDisconnect(event);
+            break;
         default:
             break;
         }

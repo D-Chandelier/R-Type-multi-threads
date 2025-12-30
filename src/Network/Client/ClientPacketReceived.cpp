@@ -117,7 +117,7 @@ void Client::packetReceivedTurrets(ENetEvent &event)
 
         Turret t({s.x, s.y});
         t.velocity = {s.velX, s.velY};
-        t.active = s.isActive;
+        t.active = s.isActive == 1;
 
         newTurrets.emplace(s.id, t);
     }

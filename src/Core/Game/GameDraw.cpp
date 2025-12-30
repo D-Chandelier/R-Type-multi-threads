@@ -125,20 +125,30 @@ void Game::drawTurrets()
 
     for (const auto &[id, turret] : client.allTurrets)
     {
-        if (!turret.active)
-            continue;
+        try
+        {
+            std::lock_guard<std::mutex> lock(client.turretMutex);
+            if (&turret == nullptr)
+                continue;
+            if (!turret.active)
+                continue;
 
-        // Ici on peut choisir la texture selon le type ou orientation
-        // Exemple simple : turrets au sol
-        sprite.setTextureRect(sf::IntRect({cellX * 1, cellY * 0}, {cellX, cellY}));
+            // Ici on peut choisir la texture selon le type ou orientation
+            // Exemple simple : turrets au sol
+            sprite.setTextureRect(sf::IntRect({cellX * 1, cellY * 0}, {cellX, cellY}));
 
-        // Position à l’écran : position monde - scroll
-        float screenX = turret.position.x - client.terrain.worldX;
-        float screenY = turret.position.y;
+            // Position à l’écran : position monde - scroll
+            float screenX = turret.position.x - client.terrain.worldX;
+            float screenY = turret.position.y;
 
-        sprite.setPosition({screenX, screenY});
+            sprite.setPosition({screenX, screenY});
 
-        window.draw(sprite);
+            window.draw(sprite);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 }
 

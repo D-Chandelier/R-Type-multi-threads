@@ -144,7 +144,7 @@ void Server::packetBroadcastTurrets()
         p.turret[i].y = turret.position.y;
         p.turret[i].velX = turret.velocity.x;
         p.turret[i].velY = turret.velocity.y;
-        p.turret[i].isActive = turret.active;
+        p.turret[i].isActive = turret.active ? 1 : 0;
         ++i;
     }
 

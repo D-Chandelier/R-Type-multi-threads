@@ -75,9 +75,10 @@ public:
 
     double serverGameTime;
 
+    std::mutex turretMutex;
+
 private:
     std::mutex mtx;
-    std::mutex turretMutex;
 
     ClientState ConnexionState;
 };

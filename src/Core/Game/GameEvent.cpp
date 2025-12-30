@@ -137,7 +137,6 @@ void Game::handleEventPlayerMove(float dt)
         {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Enter))
             {
-                // ToDo
                 client.packedSendRejoin();
             }
             return;
