@@ -48,7 +48,7 @@ namespace Utils
 
     inline uint32_t findFreePlayerId(std::map<uint32_t, RemotePlayer> &allPlayers)
     {
-        for (uint32_t id = 0; id < Config::Get().maxPlayers; ++id)
+        for (uint32_t id = 0; id < MAX_PLAYER; ++id)
         {
             if (allPlayers.find(id) == allPlayers.end())
                 return id;

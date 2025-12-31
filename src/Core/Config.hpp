@@ -7,6 +7,8 @@ constexpr float BACKGROUND_SCROLL_SPEED = 40.f;
 constexpr float LEVEL_SCROLL_SPEED = 400.f; // 180.f
 constexpr float PLAYER_SCROLL_SPEED = 70.f; // 120
 constexpr float FRAMERATE = 120.f;          // 120
+constexpr float MAX_PLAYER = 4.f;
+
 struct KeyBindings
 {
     sf::Keyboard::Key up = sf::Keyboard::Key::Up;
@@ -14,6 +16,7 @@ struct KeyBindings
     sf::Keyboard::Key left = sf::Keyboard::Key::Left;
     sf::Keyboard::Key right = sf::Keyboard::Key::Right;
     sf::Keyboard::Key fire = sf::Keyboard::Key::LControl;
+    sf::Keyboard::Key rocket = sf::Keyboard::Key::LAlt;
 };
 
 class Config
@@ -45,7 +48,7 @@ public:
     std::string serverIp = "127.0.0.1";
     uint16_t serverPort = 1234;
     uint16_t discoveryPort = serverPort + 1;
-    uint16_t maxPlayers = 4;
+    // uint16_t maxPlayers = 4;
     bool isServer = false;
     float speed = PLAYER_SCROLL_SPEED;
     uint32_t frameRate = FRAMERATE; // FPS / Hz

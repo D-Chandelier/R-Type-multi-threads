@@ -15,7 +15,7 @@ Game::Game()
     currentMenu = &menuMain;
 
     playersVA.setPrimitiveType(sf::PrimitiveType::Triangles);
-    playersVA.resize(6 * Config::Get().maxPlayers);
+    playersVA.resize(6 * MAX_PLAYER);
 
     backgroundVA_1.setPrimitiveType(sf::PrimitiveType::Triangles);
     backgroundVA_1.resize(6); // 2 triangles

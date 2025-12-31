@@ -100,7 +100,7 @@ void Server::packetSendNewId(ENetEvent event)
     p.serverStartTime = gameStartTime;
 
     if (newId != 100)
-        allPlayers[newId] = RemotePlayer{.id = newId, .position = {Config::Get().playerArea.size.x * Config::Get().playerScale.x * 0.5f, Config::Get().windowSize.y / (Config::Get().maxPlayers + 1.f) * (newId + 1)}, .peer = event.peer};
+        allPlayers[newId] = RemotePlayer{.id = newId, .position = {Config::Get().playerArea.size.x * Config::Get().playerScale.x * 0.5f, Config::Get().windowSize.y / (MAX_PLAYER + 1.f) * (newId + 1)}, .peer = event.peer};
     p.id = newId;
     event.peer->data = reinterpret_cast<void *>(static_cast<uintptr_t>(newId));
 

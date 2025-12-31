@@ -3,7 +3,7 @@
 void Client::packetSendPosition()
 {
     // envoyer la position au serveur
-    if (Config::Get().playerId < 0 || Config::Get().playerId > Config::Get().maxPlayers)
+    if (Config::Get().playerId < 0 || Config::Get().playerId > MAX_PLAYER)
         return;
 
     if (peer)
@@ -31,7 +31,7 @@ void Client::packetSendPosition()
 void Client::packetSendBullets()
 {
     // envoyer la position au serveur
-    if (Config::Get().playerId < 0 || Config::Get().playerId > Config::Get().maxPlayers)
+    if (Config::Get().playerId < 0 || Config::Get().playerId > MAX_PLAYER)
         return;
 
     if (peer)
@@ -52,7 +52,7 @@ void Client::packetSendBullets()
 
 void Client::packedSendRejoin()
 {
-    if (Config::Get().playerId < 0 || Config::Get().playerId > Config::Get().maxPlayers)
+    if (Config::Get().playerId < 0 || Config::Get().playerId > MAX_PLAYER)
         return;
 
     if (peer)

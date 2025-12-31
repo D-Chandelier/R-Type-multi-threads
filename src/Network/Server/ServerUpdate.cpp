@@ -35,7 +35,6 @@ void Server::update(float dt)
 
         packetBroadcastWorldX();
         packetBroadcastPositions();
-        // packetBroadcastTurrets();
     }
 }
 // Génération de segments et spawn des turrets
@@ -120,7 +119,7 @@ void Server::updateBullets(float dt)
     {
         bool destroyed = false;
 
-        ServerBullet &b = it->second;
+        Bullet &b = it->second;
 
         b.position += b.velocity * dt;
 
@@ -148,24 +147,17 @@ void Server::updateBullets(float dt)
                 break;
             }
         }
-        // for (auto seg = terrain.segments.begin(); seg != terrain.segments.end();)
-        // {
-        //     for (auto &block : seg->blocks)
-        //     {
-        //         sf::Vector2f d = sf::Vector2f{b.position.x + worldX, b.position.y};
-        //         if (block.rect.contains(b.position))
-        //         {
-        //             destroyed = true;
-        //             break;
-        //         }
-        //     }
-        // }
+        if (b.type == BulletType::HOMING_MISSILE)
+            updateMissile(b, dt);
+        else
+            b.position += b.velocity * dt;
 
         if (destroyed || b.position.x > Config::Get().windowSize.x)
         {
             packetBroadcastBulletDestroyed(b.id);
             it = allBullets.erase(it);
         }
+
         else
             ++it;
     }
@@ -174,4 +166,58 @@ void Server::updateBullets(float dt)
     {
         packetBroadcastTurrets();
     }
+}
+
+void Server::updateMissile(Bullet &m, float dt)
+{
+    m.lifetime += dt;
+
+    // Phase 1 : lancement
+    if (m.lifetime < MISSILE_LAUNCH_TIME)
+    {
+        m.position += m.velocity * dt;
+        return;
+    }
+
+    // Phase 2 : acquisition cible
+    if (m.targetId == 0)
+    {
+        m.targetId = findClosestTarget(m.position);
+    }
+
+    // Accélération
+    float speed = std::sqrt(m.velocity.x * m.velocity.x + m.velocity.y * m.velocity.y);
+    speed = min(speed + MISSILE_ACCELERATION * dt, MISSILE_MAX_SPEED);
+
+    // Si pas de cible → ligne droite accélérée
+    if (m.targetId == 0 || !allTurrets[m.targetId].active) // ToDo: allTurret vers allEnemies
+    {
+        sf::Vector2f dir = m.velocity / speed;
+        m.velocity = dir * speed;
+        m.position += m.velocity * dt;
+        return;
+    }
+
+    // Direction actuelle
+    sf::Vector2f dir = m.velocity / speed;
+
+    // Direction vers la cible
+    sf::Vector2f toTarget = allTurrets[m.targetId].position - m.position; // ToDo: allTurret vers allEnemies
+    float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y);
+    toTarget /= len;
+
+    // Interpolation angulaire (effet missile)
+    float dot = dir.x * toTarget.x + dir.y * toTarget.y;
+    dot = std::clamp(dot, -1.f, 1.f);
+    float angle = std::acos(dot);
+
+    float maxTurn = MISSILE_TURN_RATE * dt;
+    float t = min(1.f, maxTurn / angle);
+
+    sf::Vector2f newDir = dir + (toTarget - dir) * t;
+    float n = std::sqrt(newDir.x * newDir.x + newDir.y * newDir.y);
+    newDir /= n;
+
+    m.velocity = newDir * speed;
+    m.position += m.velocity * dt;
 }

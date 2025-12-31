@@ -4,8 +4,11 @@
 #include <SFML/Graphics.hpp>
 
 #include "Turret.hpp"
+#include "Bullet.hpp"
+#include "Player.hpp"
+#include "Segmant.hpp"
 
-constexpr std::size_t MAX_PLAYER = 32;
+// constexpr std::size_t MAX_PLAYER = 32;
 
 enum class PacketType : uint8_t
 {
@@ -50,28 +53,6 @@ struct PacketHeader
     uint8_t code;
 };
 
-struct PlayerState
-{
-    uint32_t id;
-    float x;
-    float y;
-    bool alive;
-    bool invulnerable;
-    double respawnTime;
-    float score;
-    float pv;
-};
-
-struct ServerBullet
-{
-    uint32_t id;
-    sf::Vector2f position;
-    sf::Vector2f velocity;
-    float damage;
-    uint32_t ownerId;
-    bool active = true;
-};
-
 struct ServerAssignIdPacket
 {
     PacketHeader header;
@@ -79,58 +60,10 @@ struct ServerAssignIdPacket
     double serverStartTime; // secondes (horloge serveur)
 };
 
-struct ClientPositionPacket
-{
-    PacketHeader header;
-    uint32_t id;
-    // float x;
-    // float y;
-    float velX;
-    float velY;
-};
-
-struct ClientBulletPacket
-{
-    PacketHeader header;
-    uint32_t ownerId;
-    float x, y;
-    float velX, velY;
-};
-
 struct ClientRejoinPacket
 {
     PacketHeader header;
     uint32_t id;
-};
-
-struct ServerPositionPacket
-{
-    PacketHeader header;
-    uint8_t playerCount;
-    PlayerState players[MAX_PLAYER];
-
-    double serverGameTime; // temps serveur actuel
-    float scrollSpeed;
-};
-struct ServerBulletPacket
-{
-    PacketHeader header;
-    uint32_t bulletId;
-    float x, y;
-    float velX, velY;
-    uint8_t ownerId;
-};
-
-struct ServerBulletDestroyedPacket
-{
-    PacketHeader header;
-    uint16_t bulletIndex;
-};
-
-struct ServerTurretDestroyedPacket
-{
-    PacketHeader header;
-    uint16_t turretIndex;
 };
 
 struct InitLevelPacket
@@ -149,67 +82,5 @@ struct WorldStatePacket
     float worldX;          // position monde actuelle
     double serverGameTime; // temps serveur actuel
 };
-
-struct ServerSegmentPacket
-{
-
-    PacketHeader header;
-    uint8_t type; // SegmentType
-    float startX;
-    uint8_t blockCount;
-    struct BlockData
-    {
-        float x, y, w, h;
-        uint8_t visual;
-        bool hasTurret;
-    } blocks[64];
-    uint8_t turretCount;
-    struct TurretData
-    {
-        float x, y;
-    } turrets[128];
-};
-
-// struct ServerAllSegmentsPacket
-// {
-
-//     PacketHeader header;
-//     uint8_t segmentCount;
-//     struct SegmentData
-//     {
-//         uint8_t type; // SegmentType
-//         float startX;
-//         uint8_t blockCount;
-//         struct BlockData
-//         {
-//             float x, y, w, h;
-//         } blocks[64]; // max 8 blocs par segment
-//     } segments[32];   // max 32 segments
-// };
-
-struct ServerAllSegmentsHeader
-{
-    uint8_t type;
-    uint8_t code;
-    uint16_t segmentCount;
-};
-
-struct ServerAllSegmentsPacket
-{
-    uint8_t type;
-    float startX;
-    uint16_t blockCount;
-};
-struct ServerAllSegmentsBlockPacket
-{
-    float x, y, w, h;
-    uint8_t visual;
-    bool hasTurret;
-};
-
-// struct ServerTurretPacket
-// {
-//     float x, y;
-// };
 
 #pragma pack(pop)

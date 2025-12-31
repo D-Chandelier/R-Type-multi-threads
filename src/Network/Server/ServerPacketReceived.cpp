@@ -43,7 +43,7 @@ void Server::packetReceivedBulletShoot(ENetEvent event)
 
     dir /= len;
 
-    ServerBullet bullet;
+    Bullet bullet;
     bullet.id = nextBulletId++;
     bullet.position = sf::Vector2f(shooter->getBounds().getCenter());
     bullet.velocity = dir * shooter->bulletSpeed;

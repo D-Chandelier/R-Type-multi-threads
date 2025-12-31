@@ -22,7 +22,7 @@ private:
     sf::Text title;
 
     sf::Text portLabel;
-    UITextBox tbPort, tbKeyUp, tbKeyDown, tbKeyLeft, tbKeyRight, tbKeyFire;
+    UITextBox tbPort, tbKeyUp, tbKeyDown, tbKeyLeft, tbKeyRight, tbKeyFire, tbKeyRocket;
     sf::Text portDesc;
 
     UIButton quit;

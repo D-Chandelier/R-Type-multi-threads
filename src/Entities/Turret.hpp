@@ -10,12 +10,14 @@ class Terrain;
 struct Turret
 {
     uint32_t id;
-    sf::Vector2f position;
+    sf::Vector2f position{};
     sf::Vector2f velocity;
     uint32_t pv = 2;
     bool active = true;
     float points = 10.f;
     float shootCooldown = 0.f; // timer pour tirer
+
+    Turret() = default;
 
     Turret(sf::Vector2f pos)
         : position(pos) {}

@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include <cstdint>
+
+#include "Packets.hpp"
 
 #pragma pack(push, 1)
 
@@ -22,4 +23,13 @@ struct ServerTurretsPacket
     TurretState turret[32];
 };
 
+struct ServerTurretDestroyedPacket
+{
+    struct Header
+    {
+        uint8_t type;
+        uint8_t code;
+    } header;
+    uint16_t turretIndex;
+};
 #pragma pack(pop)

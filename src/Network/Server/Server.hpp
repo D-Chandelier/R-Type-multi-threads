@@ -33,9 +33,9 @@ public:
     void stop();
     void update(float dt);
 
-    void packetBroadcastPositions();                    // envoie positions à tous les clients
-    void packetBroadcastBullets(const ServerBullet &b); // envoie les tirs à tous les clients
-    void packetBroadcastWorldX();                       // envoie la position monde à tous les clients
+    void packetBroadcastPositions();              // envoie positions à tous les clients
+    void packetBroadcastBullets(const Bullet &b); // envoie les tirs à tous les clients
+    void packetBroadcastWorldX();                 // envoie la position monde à tous les clients
     void packetBroadcastTurretDestroyed(uint32_t turretId);
     void packetBroadcastBulletDestroyed(uint32_t bulletId);
     void packetBroadcastTurrets();
@@ -51,6 +51,7 @@ public:
     void updateSegment();
     void updateTurrets(float dt);
     void updateBullets(float dt);
+    void updateMissile(Bullet &m, float dt);
 
     // TerrainSegment generateNextSegment();
 
@@ -64,6 +65,8 @@ public:
     void playerCollision(RemotePlayer &player);
 
     void killAndRespawn(RemotePlayer &p);
+    void spawnPlayerMissile(const sf::Vector2f &pos, uint32_t ownerId);
+    uint32_t findClosestTarget(const sf::Vector2f &from);
 
     std::atomic_bool serverReady = false;
 
@@ -79,7 +82,7 @@ private:
     std::mutex mtx; // protège players
     std::map<uint32_t, RemotePlayer> allPlayers;
     std::unordered_map<uint32_t, Turret> allTurrets;
-    std::unordered_map<uint32_t, ServerBullet> allBullets;
+    std::unordered_map<uint32_t, Bullet> allBullets;
 
     uint32_t nextBulletId = 0;
     uint32_t nextTurretId = 0;

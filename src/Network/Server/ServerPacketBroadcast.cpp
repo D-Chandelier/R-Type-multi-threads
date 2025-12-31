@@ -37,7 +37,7 @@ void Server::packetBroadcastPositions()
     }
 }
 
-void Server::packetBroadcastBullets(const ServerBullet &b)
+void Server::packetBroadcastBullets(const Bullet &b)
 {
     ServerBulletPacket p;
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
