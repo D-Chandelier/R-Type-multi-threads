@@ -25,7 +25,7 @@ void Client::handleEnetService()
     }
 }
 
-void Client::handleTypeReceive(ENetEvent event)
+void Client::handleTypeReceive(ENetEvent &event)
 {
     if (event.packet)
     {
@@ -44,6 +44,9 @@ void Client::handleTypeReceive(ENetEvent event)
             case static_cast<uint8_t>(ServerMsg::BULLET_SHOOT):
                 packetReceivedBullets(event);
                 break;
+            case static_cast<uint8_t>(ServerMsg::ROCKET_STATE):
+                packetReceivedRocketState(event);
+                break;
             case static_cast<uint8_t>(ServerMsg::INIT_LEVEL):
                 packetReceivedInitLevel(event);
                 break;
@@ -56,14 +59,14 @@ void Client::handleTypeReceive(ENetEvent event)
             case static_cast<uint8_t>(ServerMsg::ALL_SEGMENTS):
                 packetReceivedAllSegments(event);
                 break;
-            case static_cast<uint8_t>(ServerMsg::TURRET_DESTROYED):
-                packetReceivedTurretDestroyed(event);
+            case static_cast<uint8_t>(ServerMsg::ENEMY_DESTROYED):
+                packetReceivedEnemyDestroyed(event);
                 break;
             case static_cast<uint8_t>(ServerMsg::BULLET_DESTROYED):
                 packetReceivedBulletDestroyed(event);
                 break;
-            case static_cast<uint8_t>(ServerMsg::TURRET):
-                packetReceivedTurrets(event);
+            case static_cast<uint8_t>(ServerMsg::ENEMIES):
+                packetReceivedEnemies(event);
                 break;
 
             default:
@@ -73,7 +76,7 @@ void Client::handleTypeReceive(ENetEvent event)
     }
 }
 
-void Client::handleTypeConnect(ENetEvent event)
+void Client::handleTypeConnect(ENetEvent &event)
 {
     std::cout << "[Client] connected\n";
     peer = event.peer;
@@ -95,7 +98,7 @@ void Client::handleTypeConnect(ENetEvent event)
     enet_peer_send(peer, 0, packet);
 }
 
-void Client::handleTypeDisconnect(ENetEvent event)
+void Client::handleTypeDisconnect(ENetEvent &event)
 {
     std::cout << "[Client] disconnected\n";
     ConnexionState = ClientState::DISCONNECTED;

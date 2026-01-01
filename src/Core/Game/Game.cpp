@@ -23,6 +23,7 @@ Game::Game()
     backgroundVA_2.resize(6); // 2 triangles
 
     bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
+    rocketsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
 
     // Définir positions fixes de l'écran
     float w = static_cast<float>(Config::Get().windowSize.x);
@@ -82,12 +83,6 @@ void Game::runClient()
         client.update(dt);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-        // float sleepTime = targetFrameTime - dt;
-        // if (sleepTime > 0.f)
-        // {
-        //     std::this_thread::sleep_for(std::chrono::duration<float>(sleepTime)); //targetFrameTime
-        // }
     }
 }
 

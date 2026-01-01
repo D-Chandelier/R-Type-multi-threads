@@ -19,12 +19,19 @@ void Game::drawGameplay()
 {
     drawBackground();
     drawTerrain();
-    drawTurrets();
+    drawEnemies();
     drawPlayers();
     drawBullets();
     drawPlayersHUD();
     drawGameOverUI();
-    // drawDebug(); // debug
+}
+
+void Game::drawEnemies()
+{
+    for (auto &[id, enemy] : client.allEnemies)
+    {
+        enemy.draw(client, window);
+    }
 }
 
 void Game::drawPlayersHUD()
@@ -43,35 +50,50 @@ void Game::drawPlayersHUD()
             break;
 
         const sf::Color playerColor = PlayerColors[player.id];
-        float baseX = player.id * sectionWidth;
+        float baseX = index * sectionWidth;
 
-        // Fond semi-transparent (optionnel)
+        // Fond semi-transparent
         sf::RectangleShape background({sectionWidth, hudHeight});
         background.setPosition({baseX, 0.f});
         background.setFillColor(sf::Color(0, 0, 0, 120));
         window.draw(background);
 
-        // Texte joueur
+        // Texte joueur : nom + score
         sf::Text text(Config::Get().font);
         text.setCharacterSize(16);
         text.setFillColor(playerColor);
-
-        text.setString(
-            "Player " + std::to_string(id) +
-            "\nScore: " + std::to_string(static_cast<int>(player.score)));
-        text.setPosition({baseX + margin, margin});
+        text.setString("Player " + std::to_string(player.id) +
+                       "\nScore: " + std::to_string(static_cast<int>(player.score)));
+        text.setPosition({baseX + margin, 0.f});
         window.draw(text);
 
+        // Sprite fusée pour représenter les rockets
+        sf::Sprite rocket(Config::Get().rocketTexture);
+        rocket.scale({.75f, .75f}); // ou ajuster si nécessaire
+        rocket.setRotation(sf::degrees(-45.f));
+        rocket.setPosition({50 + baseX + margin + text.getGlobalBounds().size.x, margin + rocket.getGlobalBounds().size.y}); // juste en dessous du nom
+
+        window.draw(rocket);
+
+        // Texte "xN" à côté du rocket
+        sf::Text rocketCountText(Config::Get().font);
+        rocketCountText.setCharacterSize(16);
+        rocketCountText.setFillColor(playerColor);
+        rocketCountText.setString(std::to_string(player.nbRocket));
+        rocketCountText.setPosition({rocket.getPosition().x + rocket.getGlobalBounds().size.x + 4.f,
+                                     rocket.getPosition().y - rocketCountText.getGlobalBounds().size.y});
+        window.draw(rocketCountText);
+
         // Barre de PV
-        const float maxPV = player.maxPv; // valeur max connue
+        const float maxPV = player.maxPv;
         float pvRatio = std::max(0.f, player.pv) / maxPV;
 
-        sf::RectangleShape pvBg({sectionWidth - 2 * margin, 8.f});
-        pvBg.setPosition({baseX + margin, hudHeight - 16.f});
+        sf::RectangleShape pvBg({sectionWidth - 2 * margin, 10.f});
+        pvBg.setPosition({baseX + margin, hudHeight - 18.f});
         pvBg.setFillColor(sf::Color(80, 80, 80));
         window.draw(pvBg);
 
-        sf::RectangleShape pvBar({pvBg.getSize().x * pvRatio, 8.f});
+        sf::RectangleShape pvBar({pvBg.getSize().x * pvRatio, 10.f});
         pvBar.setPosition(pvBg.getPosition());
         pvBar.setFillColor(player.invulnerable ? sf::Color::Yellow : playerColor);
         window.draw(pvBar);
@@ -93,7 +115,6 @@ void Game::drawBackground()
 void Game::drawTerrain()
 {
     sf::Sprite sprite(Config::Get().blockTexture);
-    // sprite.setTexture(blocksTexture);
 
     for (const auto &seg : client.terrain.segments)
     {
@@ -113,45 +134,6 @@ void Game::drawTerrain()
     }
 }
 
-void Game::drawTurrets()
-{
-    sf::Sprite sprite(Config::Get().turretTexture);
-
-    int cellX = Config::Get().turretTexture.getSize().x / 6;
-    int cellY = Config::Get().turretTexture.getSize().y / 2;
-
-    sprite.setScale({3.f, 3.f});
-    sprite.setOrigin({cellX * 0.5f, cellY * 0.5f});
-
-    for (const auto &[id, turret] : client.allTurrets)
-    {
-        try
-        {
-            std::lock_guard<std::mutex> lock(client.turretMutex);
-            if (&turret == nullptr)
-                continue;
-            if (!turret.active)
-                continue;
-
-            // Ici on peut choisir la texture selon le type ou orientation
-            // Exemple simple : turrets au sol
-            sprite.setTextureRect(sf::IntRect({cellX * 1, cellY * 0}, {cellX, cellY}));
-
-            // Position à l’écran : position monde - scroll
-            float screenX = turret.position.x - client.terrain.worldX;
-            float screenY = turret.position.y;
-
-            sprite.setPosition({screenX, screenY});
-
-            window.draw(sprite);
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-    }
-}
-
 void Game::drawPlayers()
 {
     sf::RenderStates states;
@@ -161,12 +143,19 @@ void Game::drawPlayers()
 
 void Game::drawBullets()
 {
-    if (bulletsVA.getVertexCount() == 0)
-        return;
+    if (bulletsVA.getVertexCount() > 0)
+    {
+        sf::RenderStates s;
+        s.texture = nullptr;
+        window.draw(bulletsVA, s);
+    }
 
-    sf::RenderStates states;
-    states.texture = nullptr; //&Config::Get().texture; // même texture que tes sprites joueurs, ou autre texture pour bullets
-    window.draw(bulletsVA, states);
+    if (rocketsVA.getVertexCount() > 0)
+    {
+        sf::RenderStates s;
+        s.texture = &Config::Get().rocketTexture;
+        window.draw(rocketsVA, s);
+    }
 }
 
 void Game::drawGameOverUI()

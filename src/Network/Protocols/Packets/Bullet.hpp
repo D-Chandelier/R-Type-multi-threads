@@ -2,18 +2,9 @@
 
 #include <cstdint>
 #include <SFML/Graphics.hpp>
+#include "../../../Entities/Bullet.hpp"
 
 #pragma pack(push, 1)
-
-// struct ServerBullet
-// {
-//     uint32_t id;
-//     sf::Vector2f position;
-//     sf::Vector2f velocity;
-//     float damage;
-//     uint32_t ownerId;
-//     bool active = true;
-// };
 
 struct ClientBulletPacket
 {
@@ -23,6 +14,7 @@ struct ClientBulletPacket
         uint8_t code;
     } header;
     uint32_t ownerId;
+    BulletType bulletType;
     float x, y;
     float velX, velY;
 };
@@ -35,6 +27,7 @@ struct ServerBulletPacket
         uint8_t code;
     } header;
     uint32_t bulletId;
+    BulletType bulletType;
     float x, y;
     float velX, velY;
     uint8_t ownerId;

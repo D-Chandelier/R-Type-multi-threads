@@ -2,7 +2,7 @@
 #include <SFML/Graphics/Rect.hpp>
 #include <vector>
 #include "BlockVisual.hpp"
-#include "../Entities/Turret.hpp"
+#include "../Entities/Enemies.hpp"
 
 constexpr float SEGMENT_WIDTH = 512.f;
 constexpr float GROUND_HEIGHT = 128.f;
@@ -23,7 +23,6 @@ struct TerrainSegment
     float startX;
     SegmentType type;
     std::vector<TerrainBlock> blocks; // zones solides
-    std::vector<Turret> turrets;
 
     bool isOffScreen() const
     {

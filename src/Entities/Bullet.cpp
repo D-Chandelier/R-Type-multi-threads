@@ -2,6 +2,9 @@
 
 void Bullet::update(float dt)
 {
+    if (type == BulletType::HOMING_MISSILE)
+        return;
+
     position += velocity * dt;
 
     // Exemple destruction hors écran

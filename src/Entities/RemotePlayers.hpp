@@ -3,7 +3,6 @@
 #include <map>
 #include <iostream>
 #include <enet/enet.h>
-// #include <cstdint>
 
 #include "../Core/Config.hpp"
 
@@ -31,18 +30,22 @@ struct RemotePlayer
     sf::Vector2f serverPosition;
 
     double lastShootTime = 0.0;
+    double lastShootRocketTime = 0.0;
     float fireRate = 4.f; // tirs par seconde
-    float bulletSpeed = 500.f;
+    float rocketRate = 1.f;
     float bulletDamage = 1.f;
+    float rocketDamage = 20.f;
+    int nbRocket = 3;
 
     float lerpFactor = 0.3f; // fluidité du mouvement, 0 = pas de mouvement, 1 = téléport
 
     float score = 0.f;
 
     bool alive = true;
-    float pv = 3.f;
-    float maxPv = 3.f;
+    float pv = 5.f;
+    float maxPv = 5.f;
     bool invulnerable = false;
+    float invulnTimer = 0.f;
     double respawnTime = 0.0;
     double lastUpdateTime = 0.0;
 

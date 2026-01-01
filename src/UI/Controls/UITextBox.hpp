@@ -235,8 +235,6 @@ private:
 
         text.setString(value);
 
-        // sf::Vector2f totalSize;
-
         if (mode == UITextBoxMode::ABOVE)
         {
             totalSize.x = std::max(labelWidth, width);
@@ -254,16 +252,11 @@ private:
         }
         else
         { // Label à gauche
-            // totalSize.x = labelWidth + labelSpacing + width;
             totalSize.x = labelSpacing + width;
             totalSize.y = std::max(labelHeight, height);
 
             // Label
-            // label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
             label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
-            // label.setPosition({position.x - origin.x - labelSpacing,
-            //                    position.y - origin.y + totalSize.y * 0.5f});
-
             label.setPosition({position.x - labelSpacing / 2.f + width,
                                position.y + totalSize.y * 0.5f});
 
@@ -356,7 +349,6 @@ private:
     void handleKey(sf::Keyboard::Scancode sc)
     {
         // Convertir la Key en Scancode puis en string
-        // sf::Keyboard::Scancode sc = sf::Keyboard::keyToScancode(k);
         value = Utils::keyToString(sc);
         scancodeKey = sc;
         updateLayout();

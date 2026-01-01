@@ -173,8 +173,20 @@ void Game::handleEventPlayerMove(float dt)
 
             if (now - p->lastShootTime >= fireInterval)
             {
-                client.packetSendBullets();
+                client.packetSendBullets(BulletType::LINEAR);
                 p->lastShootTime = now;
+            }
+        }
+        // --- Rocket ---
+        if (sf::Keyboard::isKeyPressed(Config::Get().keys.rocket))
+        {
+            double now = Utils::localTimeNow();
+            double fireInterval = 1.0 / p->rocketRate;
+
+            if (now - p->lastShootRocketTime >= fireInterval)
+            {
+                client.packetSendBullets(BulletType::HOMING_MISSILE);
+                p->lastShootRocketTime = now;
             }
         }
     };

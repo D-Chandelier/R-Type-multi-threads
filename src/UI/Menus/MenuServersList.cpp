@@ -40,13 +40,6 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     tbPort.setType(UITextBoxType::PORT);
     tbPort.setPosition({cx + 30.f - tbPort.getSize().x / 2.f, cy * 7});
 
-    // float spacing = 10.f;
-    // float totalWidth = tbIp.getSize().x + spacing + tbPort.getSize().x;
-    // float startX = cx - (totalWidth / 2);
-    // float y = cy * 8;
-    // tbIp.setPosition({startX, y - tbIp.getSize().y / 2});
-    // tbPort.setPosition({startX + tbIp.getSize().x + spacing, y - tbPort.getSize().y / 2});
-
     // Bouton TEST
     buttonTest.setTexture("./assets/bt.png");
     buttonTest.setColor(sf::Color(128, 255, 128, 255));
@@ -63,7 +56,6 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     buttonTest.setText("Try", 24, sf::Color::Black);
     buttonTest.setSize({200, 28});
     buttonTest.setPosition({cx - buttonTest.getSize().x / 2.f, cy * 8});
-    // buttonTest.setPosition({tbPort.getPosition().x + tbPort.getSize().x + 20, y - buttonTest.getSize().y / 2});
     buttonTest.onClickCallback([this]()
                                { this->buttonTest_Click(); });
 

@@ -56,6 +56,7 @@ public:
     sf::Texture playerTexture;
     sf::Texture blockTexture;
     sf::Texture turretTexture;
+    sf::Texture rocketTexture;
     sf::Texture bckgTextureBack, bckgTextureFront;
 
     sf::Vector2f playerScale = {2.f, 2.f};
@@ -74,6 +75,8 @@ private:
             std::cerr << "[CONFIG] Impossible de charger world_01_192x192.png\n";
         if (!turretTexture.loadFromFile("assets/turret_02_96x32.png"))
             std::cerr << "[CONFIG] Impossible de charger turret_02_96x32.png\n";
+        if (!rocketTexture.loadFromFile("assets/Rocket.png"))
+            std::cerr << "[CONFIG] Impossible de charger Rocket.png\n";
         if (!bckgTextureBack.loadFromFile("assets/Blue_Nebula_08-1024x1024.png"))
             std::cerr << "[CONFIG] Impossible de charger Starfield_07-1024x1024.png\n";
         if (!bckgTextureFront.loadFromFile("assets/Starfield_07-1024x1024.png"))

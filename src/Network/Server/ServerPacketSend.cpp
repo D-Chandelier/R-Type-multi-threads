@@ -47,13 +47,6 @@ void Server::packetSendAllSegments(ENetPeer *peer)
             memcpy(ptr, &blk, sizeof(blk));
             ptr += sizeof(blk);
         }
-
-        segPkt.turretCount = static_cast<uint8_t>(seg.turrets.size());
-        for (size_t t = 0; t < seg.turrets.size(); ++t)
-        {
-            segPkt.turrets[t].x = seg.turrets[t].position.x;
-            segPkt.turrets[t].y = seg.turrets[t].position.y;
-        }
     }
 
     enet_peer_send(peer, 1, p);
@@ -75,12 +68,6 @@ void Server::packetSendSegment(const TerrainSegment &seg, ENetPeer *peer)
         p.blocks[i].h = seg.blocks[i].rect.size.y;
         p.blocks[i].visual = static_cast<uint8_t>(seg.blocks[i].visual);
         p.blocks[i].hasTurret = seg.blocks[i].hasTurret ? 1 : 0;
-    }
-    p.turretCount = static_cast<uint8_t>(seg.turrets.size());
-    for (size_t t = 0; t < seg.turrets.size(); ++t)
-    {
-        p.turrets[t].x = seg.turrets[t].position.x;
-        p.turrets[t].y = seg.turrets[t].position.y;
     }
     for (const auto &[id, player] : allPlayers)
     {

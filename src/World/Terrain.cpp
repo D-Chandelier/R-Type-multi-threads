@@ -10,10 +10,6 @@ void Terrain::init(uint32_t seed)
     nextSegmentX = 0.f;
     lookahead = 3.f * Config::Get().windowSize.x;
     cleanupMargin = 2.f * Config::Get().windowSize.x;
-    // // Générer juste assez pour le début
-    // generateNextSegment();
-
-    // generateNextSegment();
 }
 
 sf::IntRect Terrain::getTextureRect(BlockVisual v)

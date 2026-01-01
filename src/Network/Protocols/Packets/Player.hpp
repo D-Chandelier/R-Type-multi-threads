@@ -15,6 +15,7 @@ struct PlayerState
     double respawnTime;
     float score;
     float pv;
+    int nbRocket;
 };
 
 struct ClientPositionPacket
@@ -26,8 +27,6 @@ struct ClientPositionPacket
     } header;
 
     uint32_t id;
-    // float x;
-    // float y;
     float velX;
     float velY;
 };

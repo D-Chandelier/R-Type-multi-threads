@@ -38,13 +38,16 @@ public:
     void drawTerrain();
     void drawPlayers();
     void drawBullets();
-    void drawTurrets();
+    void drawEnemies();
     void drawPlayersHUD();
     void drawGameOverUI();
 
     void handleEvent();
     void handleMenuAction();
     void handleEventPlayerMove(float dt);
+
+    void buildBulletQuad(const Bullet &b, float angle);
+    void buildRocketQuad(const Bullet &b, float angle);
 
 private:
     sf::RenderWindow window;
@@ -67,8 +70,7 @@ private:
 
     GameState state = GameState::MENU_MAIN;
 
-    // sf::Texture backgroundTexture1, backgroundTexture2;
-    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA, bulletsVA;
+    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA, bulletsVA, rocketsVA;
 
     double background_1_OffsetX = 0.0;
     double background_1_OffsetY = 0.0;

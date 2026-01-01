@@ -3,12 +3,10 @@
 #include <cstddef>
 #include <SFML/Graphics.hpp>
 
-#include "Turret.hpp"
+#include "Enemies.hpp"
 #include "Bullet.hpp"
 #include "Player.hpp"
 #include "Segmant.hpp"
-
-// constexpr std::size_t MAX_PLAYER = 32;
 
 enum class PacketType : uint8_t
 {
@@ -34,12 +32,13 @@ enum class ServerMsg : uint8_t
     PLAYER_POSITION,
     BACKGROUND_STATE,
     BULLET_SHOOT,
+    ROCKET_STATE,
     INIT_LEVEL,
     WORLD_X_UPDATE,
     NEW_SEGMENT,
     ALL_SEGMENTS,
-    TURRET,
-    TURRET_DESTROYED,
+    ENEMIES,
+    ENEMY_DESTROYED,
     BULLET_DESTROYED
 };
 

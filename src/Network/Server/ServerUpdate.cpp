@@ -18,7 +18,7 @@ void Server::update(float dt)
 
         // updateSegment(dt);
         updateSegment();
-        updateTurrets(SERVER_TICK);
+        updateEnemies(SERVER_TICK);
         updateBullets(SERVER_TICK);
 
         // Respawn / invulnérabilité
@@ -52,8 +52,10 @@ void Server::updateSegment()
                 sf::Vector2f turretPos{
                     seg.startX + blk.rect.position.x + TILE / 2.f,
                     blk.rect.position.y - TURRET_HEIGHT / 2.f}; // - TILE / 2.f };
-                allTurrets.emplace(nextTurretId++, Turret(turretPos));
-                packetBroadcastTurrets();
+                Enemy t(turretPos);
+                t.type = EnemyType::TURRET;
+                allEnemies.emplace(nextEnemyId++, t);
+                packetBroadcastEnemies();
             }
         }
 
@@ -67,40 +69,29 @@ void Server::updateSegment()
     }
 }
 
-// Mise à jour des turrets : scroll, cooldown, tir
-void Server::updateTurrets(float dt)
+void Server::updateEnemies(float dt)
 {
-    for (auto it = allTurrets.begin(); it != allTurrets.end();)
+    for (auto it = allEnemies.begin(); it != allEnemies.end();)
     {
-        Turret &turret = it->second;
+        Enemy &enemy = it->second;
 
-        if (!turret.active)
+        enemy.update(dt, worldX);
+
+        if (!enemy.active)
         {
-            it = allTurrets.erase(it);
+            it = allEnemies.erase(it);
             continue;
         }
 
-        // 2) Suppression hors écran (côté gauche)
-        if (turret.position.x < worldX - TURRET_WIDTH)
+        if (enemy.wantsToShoot)
         {
-            it = allTurrets.erase(it);
-            continue;
+            // ToDo: spawnTurretBullet(enemy);
         }
-
-        // 3) Cooldown de tir
-        turret.shootCooldown -= dt;
-        if (turret.shootCooldown <= 0.f)
-        {
-            turret.shootCooldown += TURRET_FIRE_INTERVAL;
-
-            // ToDo:
-            // spawnTurretBullet(turret);
-        }
-
         ++it;
     }
 }
-// void Server::spawnTurretBullet(const Turret& turret)
+
+// void Server::spawnTurretBullet(const Enemy& turret)
 // {
 //     ServerBullet b;
 //     b.position = turret.position + sf::Vector2f{-20.f, 0.f};
@@ -113,7 +104,7 @@ void Server::updateTurrets(float dt)
 // Mise à jour des bullets et collisions avec turrets
 void Server::updateBullets(float dt)
 {
-    bool anyTurretDestroyed = false;
+    bool anyEnemiesDestroyed = false;
 
     for (auto it = allBullets.begin(); it != allBullets.end();)
     {
@@ -121,36 +112,36 @@ void Server::updateBullets(float dt)
 
         Bullet &b = it->second;
 
-        b.position += b.velocity * dt;
+        if (b.type == BulletType::HOMING_MISSILE)
+            updateMissile(b, dt);
+        else
+            b.position += b.velocity * dt;
 
-        for (auto &[turretId, turret] : allTurrets)
+        for (auto &[id, e] : allEnemies)
         {
-            if (!turret.active)
+            if (!e.active)
                 continue;
 
-            sf::Vector2f d = sf::Vector2f{b.position.x + worldX, b.position.y} - turret.position;
+            sf::Vector2f d = sf::Vector2f{b.position.x + worldX, b.position.y} - e.position;
             constexpr float radius = TURRET_HEIGHT / 2.f; // Ajuster selon le sprite
             if (d.x * d.x + d.y * d.y <= radius * radius)
             {
                 b.active = false;
                 destroyed = true;
 
-                if (turret.pv > 0)
-                    turret.pv -= allPlayers[b.ownerId].bulletDamage;
+                if (e.pv > 0)
+                    e.pv -= b.damage;
 
-                if (turret.pv <= 0)
+                if (e.pv <= 0)
                 {
-                    allPlayers[b.ownerId].score += turret.points;
-                    turret.active = false;
-                    anyTurretDestroyed = true;
+                    allPlayers[b.ownerId].score += e.points;
+                    e.active = false;
+                    anyEnemiesDestroyed = true;
+                    onEnemyDestroyed(EnemyType::TURRET, e.position, allPlayers[b.ownerId]);
                 }
                 break;
             }
         }
-        if (b.type == BulletType::HOMING_MISSILE)
-            updateMissile(b, dt);
-        else
-            b.position += b.velocity * dt;
 
         if (destroyed || b.position.x > Config::Get().windowSize.x)
         {
@@ -162,9 +153,10 @@ void Server::updateBullets(float dt)
             ++it;
     }
 
-    if (anyTurretDestroyed)
+    if (anyEnemiesDestroyed)
     {
-        packetBroadcastTurrets();
+
+        packetBroadcastEnemies();
     }
 }
 
@@ -172,52 +164,112 @@ void Server::updateMissile(Bullet &m, float dt)
 {
     m.lifetime += dt;
 
+    bool needBroadcast = true;
+
     // Phase 1 : lancement
     if (m.lifetime < MISSILE_LAUNCH_TIME)
     {
-        m.position += m.velocity * dt;
+        packetBroadcastRocket(m);
         return;
     }
 
-    // Phase 2 : acquisition cible
+    // Acquisition cible (une seule fois)
     if (m.targetId == 0)
-    {
         m.targetId = findClosestTarget(m.position);
-    }
 
-    // Accélération
     float speed = std::sqrt(m.velocity.x * m.velocity.x + m.velocity.y * m.velocity.y);
     speed = min(speed + MISSILE_ACCELERATION * dt, MISSILE_MAX_SPEED);
 
-    // Si pas de cible → ligne droite accélérée
-    if (m.targetId == 0 || !allTurrets[m.targetId].active) // ToDo: allTurret vers allEnemies
+    sf::Vector2f dir = m.velocity / speed;
+
+    // Si pas de cible valide → ligne droite accélérée
+    auto it = allEnemies.find(m.targetId);
+    if (m.targetId == 0 || it == allEnemies.end() || !it->second.active)
     {
-        sf::Vector2f dir = m.velocity / speed;
         m.velocity = dir * speed;
         m.position += m.velocity * dt;
+        packetBroadcastRocket(m);
         return;
     }
 
-    // Direction actuelle
-    sf::Vector2f dir = m.velocity / speed;
-
     // Direction vers la cible
-    sf::Vector2f toTarget = allTurrets[m.targetId].position - m.position; // ToDo: allTurret vers allEnemies
-    float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y);
-    toTarget /= len;
+    // Position missile en monde
+    sf::Vector2f missileWorldPos{
+        m.position.x + worldX,
+        m.position.y};
 
-    // Interpolation angulaire (effet missile)
+    // Direction vers la cible (monde → monde)
+    sf::Vector2f toTarget = it->second.position - missileWorldPos;
+    float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y);
+    if (len > 0.f)
+        toTarget /= len;
+
+    // Rotation limitée
     float dot = dir.x * toTarget.x + dir.y * toTarget.y;
     dot = std::clamp(dot, -1.f, 1.f);
-    float angle = std::acos(dot);
 
+    float angle = std::acos(dot);
     float maxTurn = MISSILE_TURN_RATE * dt;
-    float t = min(1.f, maxTurn / angle);
+
+    float t = (angle > 0.f) ? min(1.f, maxTurn / angle) : 1.f;
 
     sf::Vector2f newDir = dir + (toTarget - dir) * t;
     float n = std::sqrt(newDir.x * newDir.x + newDir.y * newDir.y);
-    newDir /= n;
+    if (n > 0.f)
+        newDir /= n;
 
     m.velocity = newDir * speed;
     m.position += m.velocity * dt;
+
+    packetBroadcastRocket(m);
+}
+
+void Server::updateBonuses(float dt)
+{
+    bool anyBonusCollected = false;
+
+    for (auto it = allBonuses.begin(); it != allBonuses.end();)
+    {
+        Bonus &bonus = it->second;
+        bool collected = false;
+
+        if (!bonus.active)
+        {
+            it = allBonuses.erase(it);
+            continue;
+        }
+
+        // Collision joueur ↔ bonus
+        for (auto &[playerId, player] : allPlayers)
+        {
+            if (!player.alive)
+                continue;
+
+            sf::Vector2f d = player.position - bonus.position;
+            constexpr float radius = 18.f; // rayon de ramassage
+
+            if (d.x * d.x + d.y * d.y <= radius * radius)
+            {
+                applyBonus(player, bonus);
+                collected = true;
+                anyBonusCollected = true;
+                break;
+            }
+        }
+
+        if (collected)
+        {
+            // packetBroadcastBonusCollected(bonus.id);
+            it = allBonuses.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    if (anyBonusCollected)
+    {
+        // packetBroadcastPlayers();
+    }
 }

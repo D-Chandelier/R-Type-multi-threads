@@ -49,7 +49,6 @@ void Server::playerCollision(RemotePlayer &p)
                     p.position.y += overlapY;
 
                 p.velocity.y = 0.f;
-                // blockedY = true;
             }
             // Clamp final écran (optionnel)
             p.position.x = std::clamp(

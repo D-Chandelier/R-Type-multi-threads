@@ -24,6 +24,7 @@ void Server::packetBroadcastPositions()
         p.players[i].respawnTime = player.respawnTime;
         p.players[i].score = player.score;
         p.players[i].pv = player.pv;
+        p.players[i].nbRocket = player.nbRocket;
 
         i++;
     }
@@ -49,6 +50,7 @@ void Server::packetBroadcastBullets(const Bullet &b)
     p.velX = b.velocity.x;
     p.velY = b.velocity.y;
     p.ownerId = b.ownerId;
+    p.bulletType = b.type;
 
     for (auto &[id, player] : allPlayers)
     {
@@ -63,6 +65,23 @@ void Server::packetBroadcastBullets(const Bullet &b)
     }
 }
 
+void Server::packetBroadcastRocket(Bullet &b)
+{
+    ServerBulletPacket p;
+    p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
+    p.header.code = static_cast<uint8_t>(ServerMsg::ROCKET_STATE);
+
+    p.bulletId = b.id;
+    p.x = b.position.x;
+    p.y = b.position.y;
+    p.velX = b.velocity.x;
+    p.velY = b.velocity.y;
+
+    for (auto &[_, player] : allPlayers)
+        if (player.peer)
+            enet_peer_send(player.peer, 0,
+                           enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_UNSEQUENCED));
+}
 void Server::packetBroadcastWorldX()
 {
     if (allPlayers.empty() || !host)
@@ -84,12 +103,12 @@ void Server::packetBroadcastWorldX()
     }
 }
 
-void Server::packetBroadcastTurretDestroyed(uint32_t turretId)
+void Server::packetBroadcastEnemyDestroyed(uint32_t id)
 {
-    ServerTurretDestroyedPacket p{};
+    ServerEnemyDestroyedPacket p{};
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
-    p.header.code = static_cast<uint8_t>(ServerMsg::TURRET_DESTROYED);
-    p.turretIndex = turretId; // envoie l'ID unique de la tourelle
+    p.header.code = static_cast<uint8_t>(ServerMsg::ENEMY_DESTROYED);
+    p.id = id; // envoie l'ID unique de la tourelle
 
     for (const auto &[id, player] : allPlayers)
     {
@@ -126,25 +145,26 @@ void Server::packetBroadcastBulletDestroyed(uint32_t bulletId)
     }
 }
 
-void Server::packetBroadcastTurrets()
+void Server::packetBroadcastEnemies()
 {
-    ServerTurretsPacket p{};
+    ServerEnemiesPacket p{};
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
-    p.header.code = static_cast<uint8_t>(ServerMsg::TURRET);
-    p.turretCount = std::min<uint8_t>(allTurrets.size(), 32);
+    p.header.code = static_cast<uint8_t>(ServerMsg::ENEMIES);
+    p.count = std::min<uint8_t>(allEnemies.size(), 128);
 
     uint8_t i = 0;
-    for (auto &[id, turret] : allTurrets)
+    for (auto &[id, enemy] : allEnemies)
     {
-        if (i >= p.turretCount)
+        if (i >= p.count)
             break;
 
-        p.turret[i].id = id;
-        p.turret[i].x = turret.position.x;
-        p.turret[i].y = turret.position.y;
-        p.turret[i].velX = turret.velocity.x;
-        p.turret[i].velY = turret.velocity.y;
-        p.turret[i].isActive = turret.active ? 1 : 0;
+        p.enemy[i].id = id;
+        p.enemy[i].type = enemy.type;
+        p.enemy[i].x = enemy.position.x;
+        p.enemy[i].y = enemy.position.y;
+        p.enemy[i].velX = enemy.velocity.x;
+        p.enemy[i].velY = enemy.velocity.y;
+        p.enemy[i].isActive = enemy.active ? 1 : 0;
         ++i;
     }
 
@@ -153,8 +173,8 @@ void Server::packetBroadcastTurrets()
         if (!player.peer)
             continue;
 
-        auto *packet = enet_packet_create(nullptr, sizeof(ServerTurretsPacket), ENET_PACKET_FLAG_RELIABLE);
-        std::memcpy(packet->data, &p, sizeof(ServerTurretsPacket));
+        auto *packet = enet_packet_create(nullptr, sizeof(ServerEnemiesPacket), ENET_PACKET_FLAG_RELIABLE);
+        std::memcpy(packet->data, &p, sizeof(ServerEnemiesPacket));
 
         enet_peer_send(player.peer, 0, packet);
     }

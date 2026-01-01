@@ -28,7 +28,7 @@ void Client::packetSendPosition()
     }
 }
 
-void Client::packetSendBullets()
+void Client::packetSendBullets(BulletType bType)
 {
     // envoyer la position au serveur
     if (Config::Get().playerId < 0 || Config::Get().playerId > MAX_PLAYER)
@@ -44,6 +44,7 @@ void Client::packetSendBullets()
         p.y = Utils::getLocalPlayer(allPlayers)->getBounds().getCenter().y;
         p.velX = 1.f;
         p.velY = 0.f;
+        p.bulletType = bType;
 
         ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE); // Un tir ne doit jamais être perdu.
         enet_peer_send(peer, 0, packet);

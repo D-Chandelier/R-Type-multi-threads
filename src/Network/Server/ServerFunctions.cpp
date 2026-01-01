@@ -32,17 +32,19 @@ void Server::spawnPlayerMissile(const sf::Vector2f &pos, uint32_t ownerId)
     allBullets.emplace(m.id, m);
 }
 
-uint32_t Server::findClosestTarget(const sf::Vector2f &from)
+uint32_t Server::findClosestTarget(sf::Vector2f &from)
 {
     uint32_t bestId = 0;
     float bestDistSq = MISSILE_RANGE * MISSILE_RANGE;
 
-    for (auto &[id, enemy] : allTurrets) // ToDo: AllTurret vers AllEnemies
+    sf::Vector2f newFrom = {from.x + worldX, from.y};
+
+    for (auto &[id, enemy] : allEnemies) // ToDo: AllTurret vers AllEnemies
     {
         if (!enemy.active)
             continue;
 
-        sf::Vector2f d = enemy.position - from;
+        sf::Vector2f d = enemy.position - newFrom;
         float distSq = d.x * d.x + d.y * d.y;
 
         if (distSq < bestDistSq)
@@ -52,4 +54,65 @@ uint32_t Server::findClosestTarget(const sf::Vector2f &from)
         }
     }
     return bestId;
+}
+
+void Server::onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, RemotePlayer &killer)
+{
+    // ---- Enemy détruite ----
+    if (enemyType == EnemyType::TURRET)
+    {
+        bonusStats.turretsDestroyed++;
+
+        if (bonusStats.turretsDestroyed % 5 == 0)
+        {
+            spawnBonus(BonusType::RocketX3, pos);
+        }
+    }
+
+    // ---- Score multiple de 100 ----
+    if (static_cast<int>(killer.score) % 100 == 0)
+    {
+        spawnBonus(BonusType::HealthX1, pos);
+    }
+
+    // Extensions futures ici
+}
+
+void Server::spawnBonus(BonusType type, sf::Vector2f pos)
+{
+    Bonus b;
+    b.type = type;
+    b.position = pos;
+
+    allBonuses.emplace(nextBonusId++, b);
+    std::cout << "[BONUS] Spawn " << static_cast<int>(type) << " at {" << pos.x << ", " << pos.y << "}" << std::endl;
+}
+
+void Server::applyBonus(RemotePlayer &player, Bonus &bonus)
+{
+    switch (bonus.type)
+    {
+    case BonusType::RocketX3:
+        player.nbRocket += 3;
+        break;
+
+    case BonusType::HealthX1:
+        player.pv = min(player.pv + 1.f, player.maxPv);
+        break;
+
+    case BonusType::Shield:
+        player.invulnerable = true;
+        player.invulnTimer = 5.f;
+        break;
+
+    case BonusType::FireRateUp:
+        player.fireRate *= 0.8f;
+        break;
+
+    case BonusType::ScoreBoost:
+        player.score += 50;
+        break;
+    }
+
+    bonus.active = false;
 }

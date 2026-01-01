@@ -16,12 +16,13 @@ enum class BulletType
 
 constexpr float BULLET_HEIGHT = 5.f;
 constexpr float BULLET_WIDTH = 10.f;
+constexpr float BULLET_SPEED = 500.f;
 
 constexpr float MISSILE_START_SPEED = 120.f;
 constexpr float MISSILE_MAX_SPEED = 700.f;
 constexpr float MISSILE_ACCELERATION = 900.f;
 constexpr float MISSILE_TURN_RATE = 4.5f; // radians/sec
-constexpr float MISSILE_LAUNCH_TIME = 0.2f;
+constexpr float MISSILE_LAUNCH_TIME = 0.3f;
 constexpr float MISSILE_RANGE = 900.f;
 
 struct Bullet
@@ -40,4 +41,21 @@ struct Bullet
     uint32_t targetId = 0;
 
     void update(float dt);
+
+    inline static float radToDeg(float r)
+    {
+        return r * 180.f / 3.14159265f;
+    }
+
+    inline static float bulletAngle(const sf::Vector2f &v)
+    {
+        return radToDeg(std::atan2(v.y, v.x));
+    }
+
+    static sf::Vector2f rotatePoint(const sf::Vector2f &p, float angleRad)
+    {
+        float c = std::cos(angleRad);
+        float s = std::sin(angleRad);
+        return {p.x * c - p.y * s, p.x * s + p.y * c};
+    }
 };
