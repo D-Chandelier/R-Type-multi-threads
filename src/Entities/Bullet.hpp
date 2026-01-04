@@ -2,6 +2,9 @@
 #include "../Core/Config.hpp"
 #include <SFML/Graphics.hpp>
 
+class Client;
+class Server;
+
 enum class BulletOwner
 {
     PLAYER,
@@ -11,19 +14,22 @@ enum class BulletOwner
 enum class BulletType
 {
     LINEAR,
-    HOMING_MISSILE
+    HOMING_ROCKET
 };
 
 constexpr float BULLET_HEIGHT = 5.f;
 constexpr float BULLET_WIDTH = 10.f;
 constexpr float BULLET_SPEED = 500.f;
+constexpr sf::Color BULLET_COLOR = sf::Color::Cyan;
 
-constexpr float MISSILE_START_SPEED = 120.f;
-constexpr float MISSILE_MAX_SPEED = 700.f;
-constexpr float MISSILE_ACCELERATION = 900.f;
-constexpr float MISSILE_TURN_RATE = 4.5f; // radians/sec
-constexpr float MISSILE_LAUNCH_TIME = 0.3f;
-constexpr float MISSILE_RANGE = 900.f;
+constexpr float ROCKET_HEIGHT = 12.f;
+constexpr float ROCKET_WIDTH = 32.f;
+constexpr float ROCKET_START_SPEED = 120.f;
+constexpr float ROCKET_MAX_SPEED = 700.f;
+constexpr float ROCKET_ACCELERATION = 900.f;
+constexpr float ROCKET_TURN_RATE = 4.5f; // radians/sec
+constexpr float ROCKET_LAUNCH_TIME = 0.3f;
+constexpr float ROCKET_RANGE = 900.f;
 
 struct Bullet
 {
@@ -41,7 +47,23 @@ struct Bullet
     uint32_t targetId = 0;
 
     void update(float dt);
+    static Bullet &Get()
+    {
+        static Bullet instance;
+        return instance;
+    }
+    // Coté CLIENT
+    static void updateBulletsClient(Client &client, float dt);
+    static void buildBulletQuad(const Bullet &b, float angle, sf::VertexArray &bulletsVA);
+    static void buildRocketQuad(const Bullet &b, float angle, sf::VertexArray &rocketsVA);
 
+    static void drawBullets(sf::RenderWindow &w);
+
+    // Coté SERVER
+    static void updateBulletsServer(Server &server, float dt);
+    static void updateRocketServer(Server &server, Bullet &m, float dt);
+
+    ////////////////
     inline static float radToDeg(float r)
     {
         return r * 180.f / 3.14159265f;
@@ -58,4 +80,7 @@ struct Bullet
         float s = std::sin(angleRad);
         return {p.x * c - p.y * s, p.x * s + p.y * c};
     }
+
+public:
+    sf::VertexArray bulletsVA, rocketsVA;
 };

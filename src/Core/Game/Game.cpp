@@ -22,8 +22,8 @@ Game::Game()
     backgroundVA_2.setPrimitiveType(sf::PrimitiveType::Triangles);
     backgroundVA_2.resize(6); // 2 triangles
 
-    bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
-    rocketsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
+    Bullet::Get().bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
+    Bullet::Get().rocketsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
 
     // Définir positions fixes de l'écran
     float w = static_cast<float>(Config::Get().windowSize.x);

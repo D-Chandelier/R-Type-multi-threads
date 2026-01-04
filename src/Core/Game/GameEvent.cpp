@@ -185,7 +185,7 @@ void Game::handleEventPlayerMove(float dt)
 
             if (now - p->lastShootRocketTime >= fireInterval)
             {
-                client.packetSendBullets(BulletType::HOMING_MISSILE);
+                client.packetSendBullets(BulletType::HOMING_ROCKET);
                 p->lastShootRocketTime = now;
             }
         }

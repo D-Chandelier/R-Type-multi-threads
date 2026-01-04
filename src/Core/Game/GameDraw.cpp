@@ -21,7 +21,7 @@ void Game::drawGameplay()
     drawTerrain();
     drawEnemies();
     drawPlayers();
-    drawBullets();
+    Bullet::drawBullets(window);
     drawPlayersHUD();
     drawGameOverUI();
 }
@@ -139,23 +139,6 @@ void Game::drawPlayers()
     sf::RenderStates states;
     states.texture = &Config::Get().playerTexture;
     window.draw(playersVA, states);
-}
-
-void Game::drawBullets()
-{
-    if (bulletsVA.getVertexCount() > 0)
-    {
-        sf::RenderStates s;
-        s.texture = nullptr;
-        window.draw(bulletsVA, s);
-    }
-
-    if (rocketsVA.getVertexCount() > 0)
-    {
-        sf::RenderStates s;
-        s.texture = &Config::Get().rocketTexture;
-        window.draw(rocketsVA, s);
-    }
 }
 
 void Game::drawGameOverUI()

@@ -22,10 +22,10 @@ void Server::spawnPlayerMissile(const sf::Vector2f &pos, uint32_t ownerId)
     Bullet m;
     m.id = nextBulletId++;
     m.position = pos;
-    m.velocity = sf::Vector2f(MISSILE_START_SPEED, 0.f);
+    m.velocity = sf::Vector2f(ROCKET_START_SPEED, 0.f);
     m.damage = 4.f;
     m.ownerId = ownerId;
-    m.type = BulletType::HOMING_MISSILE;
+    m.type = BulletType::HOMING_ROCKET;
     m.lifetime = 0.f;
     m.targetId = 0;
 
@@ -35,7 +35,7 @@ void Server::spawnPlayerMissile(const sf::Vector2f &pos, uint32_t ownerId)
 uint32_t Server::findClosestTarget(sf::Vector2f &from)
 {
     uint32_t bestId = 0;
-    float bestDistSq = MISSILE_RANGE * MISSILE_RANGE;
+    float bestDistSq = ROCKET_RANGE * ROCKET_RANGE;
 
     sf::Vector2f newFrom = {from.x + worldX, from.y};
 

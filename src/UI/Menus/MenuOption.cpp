@@ -81,7 +81,7 @@ MenuOption::MenuOption()
 
     // TextBox keyRocket
     tbKeyRocket.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.rocket)));
-    tbKeyRocket.setLabel("Touche MISSILE: ");
+    tbKeyRocket.setLabel("Touche ROCKET: ");
     tbKeyRocket.setLabelSpacing(300.f);
     tbKeyRocket.setMode(UITextBoxMode::LEFT);
     tbKeyRocket.setWidth(120);

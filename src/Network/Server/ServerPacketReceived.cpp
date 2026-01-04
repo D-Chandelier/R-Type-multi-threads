@@ -42,7 +42,7 @@ void Server::packetReceivedBulletShoot(ENetEvent event)
         return;
 
     dir /= len;
-    if (p->bulletType == BulletType::HOMING_MISSILE)
+    if (p->bulletType == BulletType::HOMING_ROCKET)
     {
         if (shooter->nbRocket <= 0)
             return;
@@ -52,7 +52,7 @@ void Server::packetReceivedBulletShoot(ENetEvent event)
     Bullet bullet;
     bullet.id = nextBulletId++;
     bullet.position = sf::Vector2f(shooter->getBounds().getCenter());
-    bullet.position.y += p->bulletType == BulletType::HOMING_MISSILE ? shooter->getBounds().size.y / 2 : 0;
+    bullet.position.y += p->bulletType == BulletType::HOMING_ROCKET ? shooter->getBounds().size.y / 2 : 0;
     bullet.velocity = dir * BULLET_SPEED;
     bullet.type = p->bulletType;
     bullet.damage = bullet.type == BulletType::LINEAR ? shooter->bulletDamage : shooter->rocketDamage;

@@ -18,7 +18,7 @@ void Game::updateGameplay(float dt)
 {
     updateBackgrounds();
     updatePlayers();
-    updateBullets(dt);
+    Bullet::updateBulletsClient(client, dt);
 }
 
 void Game::updateBackgrounds()
@@ -123,90 +123,4 @@ void Game::updatePlayers()
         for (int i = 0; i < 6; ++i)
             playersVA.append(quad[i]);
     }
-}
-
-void Game::updateBullets(float dt)
-{
-    for (auto &[id, b] : client.allBullets)
-        b.update(dt);
-
-    std::erase_if(client.allBullets,
-                  [](const auto &it)
-                  { return !it.second.active; });
-
-    bulletsVA.clear();
-    rocketsVA.clear();
-
-    bulletsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
-    rocketsVA.setPrimitiveType(sf::PrimitiveType::Triangles);
-
-    for (const auto &[id, b] : client.allBullets)
-    {
-        float angle = Bullet::bulletAngle(b.velocity) * 3.14159265f / 180.f;
-
-        if (b.type == BulletType::HOMING_MISSILE)
-        {
-            buildRocketQuad(b, angle);
-        }
-        else
-        {
-            buildBulletQuad(b, angle);
-        }
-    }
-}
-
-void Game::buildBulletQuad(const Bullet &b, float angle)
-{
-    float w = 10.f;
-    float h = 4.f;
-    sf::Color color = sf::Color::Cyan;
-
-    sf::Vector2f local[4] =
-        {
-            {-w / 2.f, -h / 2.f},
-            {w / 2.f, -h / 2.f},
-            {w / 2.f, h / 2.f},
-            {-w / 2.f, h / 2.f}};
-
-    sf::Vector2f world[4];
-    for (int i = 0; i < 4; ++i)
-        world[i] = Bullet::rotatePoint(local[i], angle) + b.position;
-
-    bulletsVA.append({world[0], color});
-    bulletsVA.append({world[1], color});
-    bulletsVA.append({world[2], color});
-    bulletsVA.append({world[0], color});
-    bulletsVA.append({world[2], color});
-    bulletsVA.append({world[3], color});
-}
-
-void Game::buildRocketQuad(const Bullet &b, float angle)
-{
-    float w = 32.f;
-    float h = 12.f;
-
-    sf::Vector2f local[4] =
-        {
-            {-w / 2.f, -h / 2.f},
-            {w / 2.f, -h / 2.f},
-            {w / 2.f, h / 2.f},
-            {-w / 2.f, h / 2.f}};
-
-    sf::Vector2f world[4];
-    for (int i = 0; i < 4; ++i)
-        world[i] = Bullet::rotatePoint(local[i], angle) + b.position;
-
-    sf::Vector2f uv[4] =
-        {
-            {0.f, 0.f},
-            {w, 0.f},
-            {w, h},
-            {0.f, h}};
-
-    rocketsVA.append({world[0], sf::Color::White, uv[0]});
-    rocketsVA.append({world[1], sf::Color::White, uv[1]});
-    rocketsVA.append({world[2], sf::Color::White, uv[2]});
-    rocketsVA.append({world[0], sf::Color::White, uv[0]});
-    rocketsVA.append({world[2], sf::Color::White, uv[2]});
-    rocketsVA.append({world[3], sf::Color::White, uv[3]});
 }

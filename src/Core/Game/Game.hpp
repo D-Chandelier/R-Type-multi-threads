@@ -30,14 +30,12 @@ public:
     void updateGameplay(float dt);
     void updateBackgrounds();
     void updatePlayers();
-    void updateBullets(float dt);
 
     void draw(float dt);
     void drawGameplay();
     void drawBackground();
     void drawTerrain();
     void drawPlayers();
-    void drawBullets();
     void drawEnemies();
     void drawPlayersHUD();
     void drawGameOverUI();
@@ -45,9 +43,6 @@ public:
     void handleEvent();
     void handleMenuAction();
     void handleEventPlayerMove(float dt);
-
-    void buildBulletQuad(const Bullet &b, float angle);
-    void buildRocketQuad(const Bullet &b, float angle);
 
 private:
     sf::RenderWindow window;
@@ -70,7 +65,7 @@ private:
 
     GameState state = GameState::MENU_MAIN;
 
-    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA, bulletsVA, rocketsVA;
+    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA; //, bulletsVA, rocketsVA;
 
     double background_1_OffsetX = 0.0;
     double background_1_OffsetY = 0.0;

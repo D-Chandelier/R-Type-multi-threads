@@ -53,8 +53,6 @@ public:
 
     void updateSegment();
     void updateEnemies(float dt);
-    void updateBullets(float dt);
-    void updateMissile(Bullet &m, float dt);
     void updateBonuses(float dt);
 
     void handleEnetService(float dt);
@@ -81,12 +79,13 @@ public:
     Terrain terrain;
     float worldX = 0.f;
 
+    std::unordered_map<uint32_t, Bullet> allBullets;
+    std::unordered_map<uint32_t, Enemy> allEnemies;
+    std::map<uint32_t, RemotePlayer> allPlayers;
+
 private:
     ENetHost *host = nullptr;
     std::mutex mtx; // protège players
-    std::map<uint32_t, RemotePlayer> allPlayers;
-    std::unordered_map<uint32_t, Enemy> allEnemies;
-    std::unordered_map<uint32_t, Bullet> allBullets;
     std::unordered_map<uint32_t, Bonus> allBonuses;
     BonusStats bonusStats;
 
