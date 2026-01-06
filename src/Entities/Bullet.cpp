@@ -36,7 +36,7 @@ void Bullet::updateBulletsClient(Client &client, float dt)
 
     for (const auto &[id, b] : client.allBullets)
     {
-        float angle = Bullet::bulletAngle(b.velocity) * 3.14159265f / 180.f;
+        float angle = bulletAngle(b.velocity) * 3.14159265f / 180.f;
 
         if (b.type == BulletType::HOMING_ROCKET)
         {

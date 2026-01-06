@@ -16,6 +16,7 @@ struct PlayerState
     float score;
     float pv;
     int nbRocket;
+    float fireRate;
 };
 
 struct ClientPositionPacket

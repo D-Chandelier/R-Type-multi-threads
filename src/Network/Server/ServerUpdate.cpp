@@ -20,6 +20,7 @@ void Server::update(float dt)
         updateSegment();
         updateEnemies(SERVER_TICK);
         Bullet::updateBulletsServer(*this, SERVER_TICK);
+        Bonus::updateBonusesServer(*this, SERVER_TICK);
 
         // Respawn / invulnérabilité
         const double now = Utils::currentGameTime(gameStartTime);
@@ -35,6 +36,8 @@ void Server::update(float dt)
 
         packetBroadcastWorldX();
         packetBroadcastPositions();
+        // if (allBonuses.size() > 0)
+        // packetBroadcastBonuses();
     }
 }
 // Génération de segments et spawn des turrets
@@ -98,13 +101,19 @@ void Server::updateBonuses(float dt)
     for (auto it = allBonuses.begin(); it != allBonuses.end();)
     {
         Bonus &bonus = it->second;
-        bool collected = false;
 
+        // Hors écran (à gauche)
+        if (bonus.position.x < worldX - 48.f)
+        {
+            bonus.active = false;
+        }
         if (!bonus.active)
         {
             it = allBonuses.erase(it);
             continue;
         }
+
+        bool collected = false;
 
         // Collision joueur ↔ bonus
         for (auto &[playerId, player] : allPlayers)

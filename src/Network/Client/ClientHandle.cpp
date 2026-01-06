@@ -68,6 +68,12 @@ void Client::handleTypeReceive(ENetEvent &event)
             case static_cast<uint8_t>(ServerMsg::ENEMIES):
                 packetReceivedEnemies(event);
                 break;
+            case static_cast<uint8_t>(ServerMsg::BONUS_SPAWN):
+                packetReceivedBonusSpawn(event);
+                break;
+            case static_cast<uint8_t>(ServerMsg::BONUS_DESTROYED):
+                packetReceivedBonusDestroy(event);
+                break;
 
             default:
                 return;

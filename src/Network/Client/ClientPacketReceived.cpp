@@ -129,6 +129,144 @@ void Client::packetReceivedEnemies(ENetEvent &event)
     }
 }
 
+void Client::packetReceivedBonuses(ENetEvent &event)
+{
+    const uint8_t *ptr = event.packet->data;
+
+    // Skip header
+    ptr += 2;
+
+    // Count
+    uint32_t count = 0;
+    std::memcpy(&count, ptr, sizeof(count));
+    ptr += sizeof(count);
+
+    if (count > 128)
+        return; // sécurité
+
+    std::unordered_map<uint32_t, Bonus> newBonuses;
+    newBonuses.reserve(count);
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        Bonus t;
+
+        // ID
+        std::memcpy(&t.id, ptr, sizeof(t.id));
+        ptr += sizeof(t.id);
+
+        // Type
+        uint16_t rawType;
+        std::memcpy(&rawType, ptr, sizeof(rawType));
+        t.type = static_cast<BonusType>(rawType);
+        ptr += sizeof(rawType);
+
+        // Floats
+        float vals[10];
+        std::memcpy(vals, ptr, sizeof(vals));
+        t.spawnPos = {vals[0], vals[1]};
+        t.position = {vals[2], vals[3]};
+        t.velocity = {vals[4], vals[5]};
+        t.time = vals[6];
+        t.amplitude = vals[7];
+        t.angularSpeed = vals[8];
+        t.phase = vals[9];
+        ptr += sizeof(vals);
+
+        // Active
+        int active = 0;
+        std::memcpy(&active, ptr, sizeof(active));
+        t.active = (active == 1);
+        ptr += sizeof(active);
+
+        // Sécurité : ignore float corrompu
+        if (!std::isfinite(t.position.x) || !std::isfinite(t.position.y))
+            continue;
+
+        newBonuses.emplace(t.id, t);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(bonusesMutex);
+        allBonuses.swap(newBonuses);
+    }
+
+    // Debug
+    for (auto &[id, bonus] : allBonuses)
+        std::cout << "[BONUS] id: " << id
+                  << " position: " << bonus.position.x
+                  << "," << bonus.position.y << "\n";
+}
+
+void Client::packetReceivedBonusSpawn(ENetEvent &event)
+{
+    if (event.packet->dataLength != sizeof(ServerBonusSpawnPacket))
+        return;
+
+    const auto *p = reinterpret_cast<const ServerBonusSpawnPacket *>(event.packet->data);
+
+    Bonus b;
+    b.id = p->id;
+    b.type = static_cast<BonusType>(p->type);
+    b.position = {p->x, p->y};
+    b.spawnPos = {p->sx, p->sy};
+    b.velocity = {p->vx, p->vy};
+    b.amplitude = p->amplitude;
+    b.angularSpeed = p->angularSpeed;
+    b.phase = p->phase;
+    b.time = 0.f;
+    b.active = true;
+    allBonuses[b.id] = b;
+}
+
+void Client::packetReceivedBonusDestroy(ENetEvent &event)
+{
+    if (event.packet->dataLength != sizeof(ServerBonusDestroyedPacket))
+        return;
+
+    const auto p = reinterpret_cast<const ServerBonusDestroyedPacket *>(event.packet->data);
+    allBonuses.erase(p->id);
+    std::cout << "[BONUS] Destroyed ID: " << p->id << std::endl;
+}
+
+// void Client::packetReceivedBonuses(ENetEvent &event)
+// {
+//     if (event.packet->dataLength != sizeof(ServerBonusesPacket))
+//         return;
+
+//     const auto *p = reinterpret_cast<const ServerBonusesPacket *>(event.packet->data);
+
+//     std::unordered_map<uint32_t, Bonus> newBonuses;
+//     newBonuses.reserve(p->count);
+
+//     for (uint8_t i = 0; i < p->count; ++i)
+//     {
+//         const auto &s = p->bonus[i];
+
+//         Bonus t;
+//         t.time = s.time;
+//         t.spawnPos = {s.sx, s.sy};
+//         t.position = {s.x, s.y};
+//         t.velocity = {s.vx, s.vy};
+//         t.type = s.type;
+//         t.amplitude = s.amplitude;
+//         t.angularSpeed = s.angularSpeed;
+//         t.phase = s.phase;
+//         t.active = s.active == 1;
+
+//         newBonuses.emplace(s.id, t);
+//     }
+
+//     {
+//         std::lock_guard<std::mutex> lock(bonusesMutex);
+//         allBonuses.swap(newBonuses);
+//     }
+//     for (auto &[id, bonus] : allBonuses)
+//     {
+//         std::cout << "[BONUS] id: " << id << "position: " << bonus.position.x << "," << bonus.position.y << "\n";
+//     }
+// }
+
 void Client::packetReceivedPlayersPositions(ENetEvent &event)
 {
     if (event.packet->dataLength != sizeof(ServerPositionPacket))
@@ -155,6 +293,7 @@ void Client::packetReceivedPlayersPositions(ENetEvent &event)
         rp.score = p->players[i].score;
         rp.pv = p->players[i].pv;
         rp.nbRocket = p->players[i].nbRocket;
+        rp.fireRate = p->players[i].fireRate;
     }
 
     // Supprimer uniquement les joueurs distants qui ne sont plus dans le snapshot

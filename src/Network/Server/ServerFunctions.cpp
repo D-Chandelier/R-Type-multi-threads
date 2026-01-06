@@ -70,9 +70,15 @@ void Server::onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, Remo
     }
 
     // ---- Score multiple de 100 ----
-    if (static_cast<int>(killer.score) % 100 == 0)
+    if (static_cast<int>(killer.score) % 200 == 0)
     {
         spawnBonus(BonusType::HealthX1, pos);
+    }
+
+    // ---- Score multiple de 100 ----
+    if (static_cast<int>(killer.score) % 50 == 0)
+    {
+        spawnBonus(BonusType::FireRateUp, pos);
     }
 
     // Extensions futures ici
@@ -81,12 +87,48 @@ void Server::onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, Remo
 void Server::spawnBonus(BonusType type, sf::Vector2f pos)
 {
     Bonus b;
+    b.id = nextBonusId++;
     b.type = type;
+    b.phase = randomFloat(0.f, 2.f * 3.14159265f);
+    b.spawnPos = pos; // - sf::Vector2f{0.f, b.phase};
     b.position = pos;
+    b.velocity = {Config::Get().speed * 0.75f, 0.f};
+    b.time = 0.f;
+    b.amplitude = Config::Get().windowSize.y * 0.35f;
+    b.angularSpeed = 0.8f;
+    allBonuses.emplace(b.id, b);
 
-    allBonuses.emplace(nextBonusId++, b);
-    std::cout << "[BONUS] Spawn " << static_cast<int>(type) << " at {" << pos.x << ", " << pos.y << "}" << std::endl;
+    // Envoi d’un packet spawn uniquement
+    packetBroadcastBonusSpawn(b);
 }
+
+void Server::packetBroadcastRemoveBonus(uint32_t id)
+{
+    allBonuses.erase(id);
+    packetBroadcastBonusDestroy(id);
+}
+
+float Server::randomFloat(float min, float max)
+{
+    static std::mt19937 rng{std::random_device{}()};
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(rng);
+}
+
+// void Server::spawnBonus(BonusType type, sf::Vector2f pos)
+// {
+//     Bonus b;
+//     b.id = nextBonusId++;
+//     b.type = type;
+//     b.position = pos;
+//     // Avance plus lentement qu’un bullet
+//     b.velocity = {-40.f, 0.f};
+
+//     allBonuses.emplace(b.id, b);
+
+//     // std::cout << "spawnBonus: [" << b.id << "] {" << b.position.x << "," << b.position.y << "}\n";
+//     // packetBroadcastBonuses();
+// }
 
 void Server::applyBonus(RemotePlayer &player, Bonus &bonus)
 {
@@ -106,7 +148,7 @@ void Server::applyBonus(RemotePlayer &player, Bonus &bonus)
         break;
 
     case BonusType::FireRateUp:
-        player.fireRate *= 0.8f;
+        player.fireRate *= 1.25f;
         break;
 
     case BonusType::ScoreBoost:

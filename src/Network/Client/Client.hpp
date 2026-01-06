@@ -13,6 +13,7 @@
 #include "../../Entities/RemotePlayers.hpp"
 #include "../../Entities/Enemies.hpp"
 #include "../../Entities/Bullet.hpp"
+#include "../../Entities/Bonus.hpp"
 #include "../Protocols/Packets/Packets.hpp"
 #include "../Protocols/NetworkDiscovery.hpp"
 
@@ -52,6 +53,9 @@ public:
     void packetReceivedEnemyDestroyed(ENetEvent &event);
     void packetReceivedBulletDestroyed(ENetEvent &event);
     void packetReceivedEnemies(ENetEvent &event);
+    void packetReceivedBonuses(ENetEvent &event);
+    void packetReceivedBonusSpawn(ENetEvent &event);
+    void packetReceivedBonusDestroy(ENetEvent &event);
 
     void packetSendPosition();
     void packetSendBullets(BulletType bType);
@@ -65,6 +69,7 @@ public:
     std::map<uint32_t, RemotePlayer> allPlayers;
     std::unordered_map<uint32_t, Enemy> allEnemies, allEnemiesTmp;
     std::unordered_map<uint32_t, Bullet> allBullets;
+    std::unordered_map<uint32_t, Bonus> allBonuses;
 
     Terrain terrain;
     double serverTimeOffset;
@@ -75,6 +80,7 @@ public:
     double serverGameTime;
 
     std::mutex enemiesMutex;
+    std::mutex bonusesMutex;
 
 private:
     std::mutex mtx;

@@ -7,6 +7,7 @@
 #include "Bullet.hpp"
 #include "Player.hpp"
 #include "Segmant.hpp"
+#include "Bonuses.hpp"
 
 enum class PacketType : uint8_t
 {
@@ -39,7 +40,9 @@ enum class ServerMsg : uint8_t
     ALL_SEGMENTS,
     ENEMIES,
     ENEMY_DESTROYED,
-    BULLET_DESTROYED
+    BULLET_DESTROYED,
+    BONUS_SPAWN,
+    BONUS_DESTROYED
 };
 
 ///////////////////////////////////////////////////////:

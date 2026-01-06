@@ -4,7 +4,7 @@
 #include <iostream>
 
 constexpr float BACKGROUND_SCROLL_SPEED = 40.f;
-constexpr float LEVEL_SCROLL_SPEED = 400.f; // 180.f
+constexpr float LEVEL_SCROLL_SPEED = 200.f; // 180.f
 constexpr float PLAYER_SCROLL_SPEED = 70.f; // 120
 constexpr float FRAMERATE = 120.f;          // 120
 constexpr float MAX_PLAYER = 4.f;
@@ -59,6 +59,16 @@ public:
     sf::Texture rocketTexture;
     sf::Texture bckgTextureBack, bckgTextureFront;
 
+    sf::Texture bonusRocketTex;
+    sf::Texture bonusHealthTex;
+    sf::Texture bonusShieldTex;
+    sf::Texture bonusFireRateTex;
+    sf::Texture bonusScoreTex;
+
+    sf::Texture RocketX3Tex;
+    sf::Texture HealthX1Tex;
+    sf::Texture FireRateUpTex;
+
     sf::Vector2f playerScale = {2.f, 2.f};
     sf::FloatRect playerArea;
 
@@ -81,6 +91,12 @@ private:
             std::cerr << "[CONFIG] Impossible de charger Starfield_07-1024x1024.png\n";
         if (!bckgTextureFront.loadFromFile("assets/Starfield_07-1024x1024.png"))
             std::cerr << "[CONFIG] Impossible de charger Blue_Nebula_08-1024x1024.png\n";
+        if (!RocketX3Tex.loadFromFile("assets/RocketX3.png"))
+            std::cerr << "[CONFIG] Impossible de charger RocketX3.png\n";
+        if (!HealthX1Tex.loadFromFile("assets/HealthX1.png"))
+            std::cerr << "[CONFIG] Impossible de charger HealthX1.png\n";
+        if (FireRateUpTex.loadFromFile("assets/FireRateUp.png"))
+            std::cerr << "[CONFIG] Impossible de charger FireRateUp.png\n";
 
         bckgTextureBack.setRepeated(true);
         bckgTextureFront.setRepeated(true);

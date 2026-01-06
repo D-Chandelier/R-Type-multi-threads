@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <random>
+
 #include "../../Core/Config.hpp"
 #include "../../Core/Utils.hpp"
 
@@ -42,6 +44,10 @@ public:
     void packetBroadcastBulletDestroyed(uint32_t bulletId);
     void packetBroadcastEnemies();
     void packetBroadcastRocket(Bullet &b);
+    void packetBroadcastBonuses();
+    void packetBroadcastBonusSpawn(const Bonus &b);
+    void packetBroadcastRemoveBonus(uint32_t id);
+    void packetBroadcastBonusDestroy(uint32_t id);
 
     void packetSendAllSegments(ENetPeer *peer);
     void packetSendSegment(const TerrainSegment &seg, ENetPeer *peer);
@@ -69,6 +75,7 @@ public:
     void onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, RemotePlayer &killer);
     void spawnBonus(BonusType type, sf::Vector2f pos);
     void applyBonus(RemotePlayer &player, Bonus &bonus);
+    float randomFloat(float min, float max);
 
     std::atomic_bool serverReady = false;
 
@@ -81,12 +88,12 @@ public:
 
     std::unordered_map<uint32_t, Bullet> allBullets;
     std::unordered_map<uint32_t, Enemy> allEnemies;
+    std::unordered_map<uint32_t, Bonus> allBonuses;
     std::map<uint32_t, RemotePlayer> allPlayers;
 
 private:
     ENetHost *host = nullptr;
     std::mutex mtx; // protège players
-    std::unordered_map<uint32_t, Bonus> allBonuses;
     BonusStats bonusStats;
 
     uint32_t nextBulletId = 0;

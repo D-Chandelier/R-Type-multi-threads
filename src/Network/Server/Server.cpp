@@ -25,7 +25,7 @@ bool Server::start(uint16_t port)
         return false;
 
     gameStartTime = Utils::localTimeNow();
-    std::cout << "[Server] started on port " << port << "at " << gameStartTime << "\n";
+    std::cout << "[Server] started on port " << port << " at " << gameStartTime << "\n";
     serverReady = true;
 
     levelSeed = std::random_device{}();
