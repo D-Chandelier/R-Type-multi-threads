@@ -40,7 +40,7 @@ public:
     void packetBroadcastPositions();              // envoie positions à tous les clients
     void packetBroadcastBullets(const Bullet &b); // envoie les tirs à tous les clients
     void packetBroadcastWorldX();                 // envoie la position monde à tous les clients
-    void packetBroadcastEnemyDestroyed(uint32_t id);
+    void packetBroadcastEnemyDestroyed(uint32_t id, sf::Vector2f pos);
     void packetBroadcastBulletDestroyed(uint32_t bulletId);
     void packetBroadcastEnemies();
     void packetBroadcastRocket(Bullet &b);
@@ -59,7 +59,7 @@ public:
 
     void updateSegment();
     void updateEnemies(float dt);
-    void updateBonuses(float dt);
+    // void updateBonuses(float dt);
 
     void handleEnetService(float dt);
     void handleTypeConnect(ENetEvent event);
@@ -73,7 +73,7 @@ public:
     uint32_t findClosestTarget(sf::Vector2f &from);
 
     void onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, RemotePlayer &killer);
-    void spawnBonus(BonusType type, sf::Vector2f pos);
+    // void spawnBonus(BonusType type, sf::Vector2f pos);
     void applyBonus(RemotePlayer &player, Bonus &bonus);
     float randomFloat(float min, float max);
 
@@ -88,7 +88,10 @@ public:
 
     std::unordered_map<uint32_t, Bullet> allBullets;
     std::unordered_map<uint32_t, Enemy> allEnemies;
+
     std::unordered_map<uint32_t, Bonus> allBonuses;
+    uint32_t nextBonusId = 0;
+
     std::map<uint32_t, RemotePlayer> allPlayers;
 
 private:
@@ -98,7 +101,6 @@ private:
 
     uint32_t nextBulletId = 0;
     uint32_t nextEnemyId = 0;
-    uint32_t nextBonusId = 0;
 
     double gameStartTime = 0.0;
     float positionAccumulator = 0.0f;                         // temps écoulé depuis dernier broadcast

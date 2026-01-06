@@ -39,7 +39,7 @@ uint32_t Server::findClosestTarget(sf::Vector2f &from)
 
     sf::Vector2f newFrom = {from.x + worldX, from.y};
 
-    for (auto &[id, enemy] : allEnemies) // ToDo: AllTurret vers AllEnemies
+    for (auto &[id, enemy] : allEnemies)
     {
         if (!enemy.active)
             continue;
@@ -65,42 +65,42 @@ void Server::onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, Remo
 
         if (bonusStats.turretsDestroyed % 5 == 0)
         {
-            spawnBonus(BonusType::RocketX3, pos);
+            Bonus::spawnBonus(BonusType::RocketX3, pos, *this);
         }
     }
 
     // ---- Score multiple de 100 ----
     if (static_cast<int>(killer.score) % 200 == 0)
     {
-        spawnBonus(BonusType::HealthX1, pos);
+        Bonus::spawnBonus(BonusType::HealthX1, pos, *this);
     }
 
     // ---- Score multiple de 100 ----
     if (static_cast<int>(killer.score) % 50 == 0)
     {
-        spawnBonus(BonusType::FireRateUp, pos);
+        Bonus::spawnBonus(BonusType::FireRateUp, pos, *this);
     }
 
     // Extensions futures ici
 }
 
-void Server::spawnBonus(BonusType type, sf::Vector2f pos)
-{
-    Bonus b;
-    b.id = nextBonusId++;
-    b.type = type;
-    b.phase = randomFloat(0.f, 2.f * 3.14159265f);
-    b.spawnPos = pos; // - sf::Vector2f{0.f, b.phase};
-    b.position = pos;
-    b.velocity = {Config::Get().speed * 0.75f, 0.f};
-    b.time = 0.f;
-    b.amplitude = Config::Get().windowSize.y * 0.35f;
-    b.angularSpeed = 0.8f;
-    allBonuses.emplace(b.id, b);
+// void Server::spawnBonus(BonusType type, sf::Vector2f pos)
+// {
+//     Bonus b;
+//     b.id = nextBonusId++;
+//     b.type = type;
+//     b.phase = randomFloat(0.f, 2.f * 3.14159265f);
+//     b.spawnPos = pos; // - sf::Vector2f{0.f, b.phase};
+//     b.position = pos;
+//     b.velocity = {Config::Get().speed * 0.75f, 0.f};
+//     b.time = 0.f;
+//     b.amplitude = Config::Get().windowSize.y * 0.35f;
+//     b.angularSpeed = 0.8f;
+//     allBonuses.emplace(b.id, b);
 
-    // Envoi d’un packet spawn uniquement
-    packetBroadcastBonusSpawn(b);
-}
+//     // Envoi d’un packet spawn uniquement
+//     packetBroadcastBonusSpawn(b);
+// }
 
 void Server::packetBroadcastRemoveBonus(uint32_t id)
 {
@@ -108,12 +108,12 @@ void Server::packetBroadcastRemoveBonus(uint32_t id)
     packetBroadcastBonusDestroy(id);
 }
 
-float Server::randomFloat(float min, float max)
-{
-    static std::mt19937 rng{std::random_device{}()};
-    std::uniform_real_distribution<float> dist(min, max);
-    return dist(rng);
-}
+// float Server::randomFloat(float min, float max)
+// {
+//     static std::mt19937 rng{std::random_device{}()};
+//     std::uniform_real_distribution<float> dist(min, max);
+//     return dist(rng);
+// }
 
 // void Server::spawnBonus(BonusType type, sf::Vector2f pos)
 // {
@@ -130,31 +130,31 @@ float Server::randomFloat(float min, float max)
 //     // packetBroadcastBonuses();
 // }
 
-void Server::applyBonus(RemotePlayer &player, Bonus &bonus)
-{
-    switch (bonus.type)
-    {
-    case BonusType::RocketX3:
-        player.nbRocket += 3;
-        break;
+// void Server::applyBonus(RemotePlayer &player, Bonus &bonus)
+// {
+//     switch (bonus.type)
+//     {
+//     case BonusType::RocketX3:
+//         player.nbRocket += 3;
+//         break;
 
-    case BonusType::HealthX1:
-        player.pv = min(player.pv + 1.f, player.maxPv);
-        break;
+//     case BonusType::HealthX1:
+//         player.pv = min(player.pv + 1.f, player.maxPv);
+//         break;
 
-    case BonusType::Shield:
-        player.invulnerable = true;
-        player.invulnTimer = 5.f;
-        break;
+//     case BonusType::Shield:
+//         player.invulnerable = true;
+//         player.invulnTimer = 5.f;
+//         break;
 
-    case BonusType::FireRateUp:
-        player.fireRate *= 1.25f;
-        break;
+//     case BonusType::FireRateUp:
+//         player.fireRate *= 1.25f;
+//         break;
 
-    case BonusType::ScoreBoost:
-        player.score += 50;
-        break;
-    }
+//     case BonusType::ScoreBoost:
+//         player.score += 50;
+//         break;
+//     }
 
-    bonus.active = false;
-}
+//     bonus.active = false;
+// }

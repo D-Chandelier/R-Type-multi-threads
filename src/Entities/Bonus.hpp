@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../Core/Config.hpp"
 #include "RemotePlayers.hpp"
+// #include "../Network/Server/Server.hpp"
 #include <SFML/Graphics.hpp>
 
 class Client;
@@ -55,9 +56,12 @@ public:
 
     static void updateBonusesServer(Server &server, float dt);
     static bool checkCollision(const Bonus &b, const RemotePlayer &p, float worldX);
+    static void spawnBonus(BonusType type, sf::Vector2f pos, Server &server);
+    static void applyBonus(RemotePlayer &player, Bonus &bonus);
 
     inline static float radToDeg(float r) { return r * 180.f / 3.14159265f; }
     inline static float bulletAngle(const sf::Vector2f &v) { return radToDeg(std::atan2(v.y, v.x)); }
+    inline static float randomFloat(float min, float max);
 
     sf::VertexArray RocketX3VA, HealthX1VA, ShieldVA, FireRateUpVA, ScoreBoostVA;
 };

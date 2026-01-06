@@ -32,5 +32,6 @@ struct ServerEnemyDestroyedPacket
         uint8_t code;
     } header;
     uint32_t id;
+    float x, y;
 };
 #pragma pack(pop)

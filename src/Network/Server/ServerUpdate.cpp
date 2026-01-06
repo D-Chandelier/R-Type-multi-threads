@@ -94,58 +94,58 @@ void Server::updateEnemies(float dt)
     }
 }
 
-void Server::updateBonuses(float dt)
-{
-    bool anyBonusCollected = false;
+// void Server::updateBonuses(float dt)
+// {
+//     bool anyBonusCollected = false;
 
-    for (auto it = allBonuses.begin(); it != allBonuses.end();)
-    {
-        Bonus &bonus = it->second;
+//     for (auto it = allBonuses.begin(); it != allBonuses.end();)
+//     {
+//         Bonus &bonus = it->second;
 
-        // Hors écran (à gauche)
-        if (bonus.position.x < worldX - 48.f)
-        {
-            bonus.active = false;
-        }
-        if (!bonus.active)
-        {
-            it = allBonuses.erase(it);
-            continue;
-        }
+//         // Hors écran (à gauche)
+//         if (bonus.position.x < worldX - 48.f)
+//         {
+//             bonus.active = false;
+//         }
+//         if (!bonus.active)
+//         {
+//             it = allBonuses.erase(it);
+//             continue;
+//         }
 
-        bool collected = false;
+//         bool collected = false;
 
-        // Collision joueur ↔ bonus
-        for (auto &[playerId, player] : allPlayers)
-        {
-            if (!player.alive)
-                continue;
+//         // Collision joueur ↔ bonus
+//         for (auto &[playerId, player] : allPlayers)
+//         {
+//             if (!player.alive)
+//                 continue;
 
-            sf::Vector2f d = player.position - bonus.position;
-            constexpr float radius = 18.f; // rayon de ramassage
+//             sf::Vector2f d = player.position - bonus.position;
+//             constexpr float radius = 18.f; // rayon de ramassage
 
-            if (d.x * d.x + d.y * d.y <= radius * radius)
-            {
-                applyBonus(player, bonus);
-                collected = true;
-                anyBonusCollected = true;
-                break;
-            }
-        }
+//             if (d.x * d.x + d.y * d.y <= radius * radius)
+//             {
+//                 Bonus::applyBonus(player, bonus);
+//                 collected = true;
+//                 anyBonusCollected = true;
+//                 break;
+//             }
+//         }
 
-        if (collected)
-        {
-            // packetBroadcastBonusCollected(bonus.id);
-            it = allBonuses.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
-    }
+//         if (collected)
+//         {
+//             // packetBroadcastBonusCollected(bonus.id);
+//             it = allBonuses.erase(it);
+//         }
+//         else
+//         {
+//             ++it;
+//         }
+//     }
 
-    if (anyBonusCollected)
-    {
-        // packetBroadcastPlayers();
-    }
-}
+//     if (anyBonusCollected)
+//     {
+//         // packetBroadcastPlayers();
+//     }
+// }

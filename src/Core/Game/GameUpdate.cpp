@@ -20,6 +20,7 @@ void Game::updateGameplay(float dt)
     updatePlayers();
     Bullet::updateBulletsClient(client, dt);
     Bonus::updateBonusesClient(client, dt);
+    Explosion::updateExplosionsClient(client, dt);
 }
 
 void Game::updateBackgrounds()

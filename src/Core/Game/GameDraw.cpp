@@ -17,17 +17,13 @@ void Game::draw(float dt)
 
 void Game::drawGameplay()
 {
-    // if (!client.allBonuses.empty())
-    // {
-    //     std::cout << "[CLIENT] Bonuses count: "
-    //               << client.allBonuses.size() << std::endl;
-    // }
     drawBackground();
     drawTerrain();
     drawEnemies();
     drawPlayers();
     Bullet::drawBullets(window);
     Bonus::drawBonuses(window);
+    Explosion::draw(client, window);
     drawPlayersHUD();
     drawGameOverUI();
 }

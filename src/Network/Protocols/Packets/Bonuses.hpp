@@ -6,6 +6,8 @@
 
 #pragma pack(push, 1)
 
+enum class BonusType;
+
 struct BonusState
 {
     uint32_t id;

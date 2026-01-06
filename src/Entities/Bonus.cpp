@@ -178,7 +178,7 @@ void Bonus::updateBonusesServer(Server &server, float dt)
 
             if (checkCollision(b, p, server.worldX))
             {
-                server.applyBonus(p, b);
+                applyBonus(p, b);
                 collected = true;
                 break;
             }
@@ -200,10 +200,10 @@ bool Bonus::checkCollision(const Bonus &b, const RemotePlayer &p, float worldX)
 {
     // Hitbox joueur (monde)
     sf::FloatRect playerBox(
-        {p.position.x + worldX, // + Config::Get().playerArea.size.x / 2,
-         p.position.y},         //- Config::Get().playerArea.size.y / 2},
-        {Config::Get().playerArea.size.x,
-         Config::Get().playerArea.size.y});
+        {p.position.x + worldX + Config::Get().playerArea.size.x / 2, // + Config::Get().playerArea.size.x / 2,
+         p.position.y + Config::Get().playerArea.size.y / 2},         //- Config::Get().playerArea.size.y / 2},
+        {Config::Get().playerArea.size.x * 2,
+         Config::Get().playerArea.size.y * 2});
 
     // Hitbox bonus (monde)
     sf::FloatRect bonusBox(
@@ -220,4 +220,58 @@ bool Bonus::checkCollision(const Bonus &b, const RemotePlayer &p, float worldX)
     playerBox.size.y += margin * 2.f;
 
     return playerBox.findIntersection(bonusBox).has_value();
+}
+
+void Bonus::spawnBonus(BonusType type, sf::Vector2f pos, Server &server)
+{
+    Bonus b;
+    b.id = server.nextBonusId++;
+    b.type = type;
+    b.phase = randomFloat(0.f, 2.f * 3.14159265f);
+    b.spawnPos = pos; // - sf::Vector2f{0.f, b.phase};
+    b.position = pos;
+    b.velocity = {Config::Get().speed * 1.75f, 0.f};
+    b.time = 0.f;
+    b.amplitude = (Config::Get().windowSize.y - pos.y) * 0.5f;
+    b.angularSpeed = 0.8f;
+    server.allBonuses.emplace(b.id, b);
+
+    // Envoi d’un packet spawn uniquement
+    server.packetBroadcastBonusSpawn(b);
+}
+
+void Bonus::applyBonus(RemotePlayer &player, Bonus &bonus)
+{
+    switch (bonus.type)
+    {
+    case BonusType::RocketX3:
+        player.nbRocket += 3;
+        break;
+
+    case BonusType::HealthX1:
+        player.pv = std::min(player.pv + 1.f, player.maxPv);
+        break;
+
+    case BonusType::Shield:
+        player.invulnerable = true;
+        player.invulnTimer = 5.f;
+        break;
+
+    case BonusType::FireRateUp:
+        player.fireRate *= 1.25f;
+        break;
+
+    case BonusType::ScoreBoost:
+        player.score += 50;
+        break;
+    }
+
+    bonus.active = false;
+}
+
+float Bonus::randomFloat(float min, float max)
+{
+    static std::mt19937 rng{std::random_device{}()};
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(rng);
 }

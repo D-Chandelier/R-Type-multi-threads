@@ -105,12 +105,14 @@ void Server::packetBroadcastWorldX()
     }
 }
 
-void Server::packetBroadcastEnemyDestroyed(uint32_t id)
+void Server::packetBroadcastEnemyDestroyed(uint32_t id, sf::Vector2f pos)
 {
     ServerEnemyDestroyedPacket p{};
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
     p.header.code = static_cast<uint8_t>(ServerMsg::ENEMY_DESTROYED);
     p.id = id; // envoie l'ID unique de la tourelle
+    p.x = pos.x;
+    p.y = pos.y;
 
     for (const auto &[id, player] : allPlayers)
     {
@@ -124,6 +126,7 @@ void Server::packetBroadcastEnemyDestroyed(uint32_t id)
 
         enet_peer_send(player.peer, 0, pkt);
     }
+    std::cout << "Send Enemy destroyed: " << id << "\n";
 }
 
 void Server::packetBroadcastBulletDestroyed(uint32_t bulletId)

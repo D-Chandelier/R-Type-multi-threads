@@ -158,9 +158,11 @@ void Bullet::updateBulletsServer(Server &server, float dt)
 
                 if (e.pv <= 0)
                 {
+                    server.packetBroadcastEnemyDestroyed(id, e.position);
                     server.allPlayers[b.ownerId].score += e.points;
                     e.active = false;
                     anyEnemiesDestroyed = true;
+                    // server.packetBroadcastEnemyDestroyed(e.id, e.position);
                     server.onEnemyDestroyed(EnemyType::TURRET, e.position, server.allPlayers[b.ownerId]);
                 }
                 break;
@@ -177,11 +179,11 @@ void Bullet::updateBulletsServer(Server &server, float dt)
             ++it;
     }
 
-    if (anyEnemiesDestroyed)
-    {
+    // if (anyEnemiesDestroyed)
+    // {
 
-        server.packetBroadcastEnemies();
-    }
+    //     server.packetBroadcastEnemies();
+    // }
 }
 
 void Bullet::updateRocketServer(Server &server, Bullet &m, float dt)

@@ -14,6 +14,7 @@
 #include "../../Entities/Enemies.hpp"
 #include "../../Entities/Bullet.hpp"
 #include "../../Entities/Bonus.hpp"
+#include "../../Entities/Animations.hpp"
 #include "../Protocols/Packets/Packets.hpp"
 #include "../Protocols/NetworkDiscovery.hpp"
 
@@ -70,6 +71,7 @@ public:
     std::unordered_map<uint32_t, Enemy> allEnemies, allEnemiesTmp;
     std::unordered_map<uint32_t, Bullet> allBullets;
     std::unordered_map<uint32_t, Bonus> allBonuses;
+    std::vector<Explosion> explosions;
 
     Terrain terrain;
     double serverTimeOffset;

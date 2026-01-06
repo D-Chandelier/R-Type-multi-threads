@@ -69,6 +69,8 @@ public:
     sf::Texture HealthX1Tex;
     sf::Texture FireRateUpTex;
 
+    sf::Texture ExplosionTex;
+
     sf::Vector2f playerScale = {2.f, 2.f};
     sf::FloatRect playerArea;
 
@@ -97,6 +99,8 @@ private:
             std::cerr << "[CONFIG] Impossible de charger HealthX1.png\n";
         if (FireRateUpTex.loadFromFile("assets/FireRateUp.png"))
             std::cerr << "[CONFIG] Impossible de charger FireRateUp.png\n";
+        if (ExplosionTex.loadFromFile("assets/Explosion.png"))
+            std::cerr << "[CONFIG] Impossible de charger Explosion.png\n";
 
         bckgTextureBack.setRepeated(true);
         bckgTextureFront.setRepeated(true);

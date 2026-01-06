@@ -226,7 +226,6 @@ void Client::packetReceivedBonusDestroy(ENetEvent &event)
 
     const auto p = reinterpret_cast<const ServerBonusDestroyedPacket *>(event.packet->data);
     allBonuses.erase(p->id);
-    std::cout << "[BONUS] Destroyed ID: " << p->id << std::endl;
 }
 
 // void Client::packetReceivedBonuses(ENetEvent &event)
@@ -369,10 +368,16 @@ void Client::packetReceivedEnemyDestroyed(ENetEvent &event)
 
     auto *p = reinterpret_cast<ServerEnemyDestroyedPacket *>(event.packet->data);
 
+    // std::cout << "Packet received EnemyDestroyed : " <<
+
     auto it = allEnemies.find(p->id);
     if (it != allEnemies.end())
     {
         it->second.active = false;
+
+        // Création de l’explosion
+        Explosion::spawnExplosion(*this, {p->x, p->y});
+        // {it->second.position.x - targetWorldX, it->second.position.y});
     }
 }
 
