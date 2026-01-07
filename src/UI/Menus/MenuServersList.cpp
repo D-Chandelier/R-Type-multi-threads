@@ -125,7 +125,6 @@ void MenuServersList::buttonTest_Click()
 
             bool ok = false;
 
-            // ---- Test réel ENet ----
             ENetHost *client = enet_host_create(nullptr, 1, 1, 0, 0);
             if (!client)
             {
@@ -184,7 +183,7 @@ void MenuServersList::updateLoader()
     float radius = 25.f;
     int segments = 45;
     float arcSize = 135.f;
-    float thickness = 4.f; // épaisseur de l’arc
+    float thickness = 4.f;
 
     loader.setPrimitiveType(sf::PrimitiveType::TriangleStrip);
 
@@ -196,7 +195,6 @@ void MenuServersList::updateLoader()
         sf::Vector2f outer = center + dir * (radius + thickness / 2.f);
         sf::Vector2f inner = center + dir * (radius - thickness / 2.f);
 
-        // Alpha progressif pour effet de flux
         float alpha = 50.f + 205.f * (float(i) / segments);
 
         loader.append(sf::Vertex(inner, sf::Color(255, 255, 0, static_cast<std::uint8_t>(alpha))));
@@ -230,7 +228,6 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
     if (startAngle >= 360.f)
         startAngle -= 360.f;
 
-    // Recrée le loader
     updateLoader();
 
     // Scanner les serveurs toutes les secondes
@@ -278,7 +275,6 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
         }
     }
 
-    // Hover et mise à jour couleur serveur
     hoveredIndex = -1;
     {
         std::lock_guard<std::mutex> lock(serversMutex);

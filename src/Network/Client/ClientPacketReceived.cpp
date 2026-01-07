@@ -329,6 +329,30 @@ void Client::packetReceivedBullets(ENetEvent &event)
     allBullets.emplace(b.id, b);
 }
 
+void Client::packetReceivedBulletSpawn(ENetEvent &e)
+{
+    if (e.packet->dataLength != sizeof(ServerBulletSpawnPacket))
+        return;
+
+    auto *p = reinterpret_cast<ServerBulletSpawnPacket *>(e.packet->data);
+
+    // Anti-duplication (important)
+    if (allBullets.contains(p->id))
+        return;
+
+    Bullet b;
+    b.id = p->id;
+    b.position = {p->x, p->y};
+    b.velocity = {p->vx, p->vy};
+    b.owner = p->owner == static_cast<uint8_t>(BulletOwner::PLAYER) ? BulletOwner::PLAYER : BulletOwner::ENEMY;
+    b.damage = p->dammage;
+    b.type = p->type == static_cast<uint8_t>(BulletType::LINEAR) ? BulletType::LINEAR : BulletType::HOMING_ROCKET;
+    b.active = true;
+
+    allBullets.emplace(b.id, b);
+    // std::cout << "Enemy shoot spawn: " << b.id << "\n";
+}
+
 void Client::packetReceivedRocketState(ENetEvent &event)
 {
     auto *p = reinterpret_cast<ServerBulletPacket *>(event.packet->data);

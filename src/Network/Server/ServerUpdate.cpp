@@ -36,8 +36,6 @@ void Server::update(float dt)
 
         packetBroadcastWorldX();
         packetBroadcastPositions();
-        // if (allBonuses.size() > 0)
-        // packetBroadcastBonuses();
     }
 }
 // Génération de segments et spawn des turrets
@@ -52,12 +50,16 @@ void Server::updateSegment()
         {
             if (blk.hasTurret)
             {
+                uint32_t id = nextEnemyId++;
+
                 sf::Vector2f turretPos{
                     seg.startX + blk.rect.position.x + TILE / 2.f,
-                    blk.rect.position.y - TURRET_HEIGHT / 2.f}; // - TILE / 2.f };
+                    blk.rect.position.y - TURRET_HEIGHT / 2.f};
                 Enemy t(turretPos);
+
+                t.id = id;
                 t.type = EnemyType::TURRET;
-                allEnemies.emplace(nextEnemyId++, t);
+                allEnemies.emplace(id, t);
                 packetBroadcastEnemies();
             }
         }
@@ -88,64 +90,9 @@ void Server::updateEnemies(float dt)
 
         if (enemy.wantsToShoot)
         {
-            // ToDo: spawnTurretBullet(enemy);
+            Bullet::spawnTurretBullet(enemy, *this);
+            enemy.wantsToShoot = false;
         }
         ++it;
     }
 }
-
-// void Server::updateBonuses(float dt)
-// {
-//     bool anyBonusCollected = false;
-
-//     for (auto it = allBonuses.begin(); it != allBonuses.end();)
-//     {
-//         Bonus &bonus = it->second;
-
-//         // Hors écran (à gauche)
-//         if (bonus.position.x < worldX - 48.f)
-//         {
-//             bonus.active = false;
-//         }
-//         if (!bonus.active)
-//         {
-//             it = allBonuses.erase(it);
-//             continue;
-//         }
-
-//         bool collected = false;
-
-//         // Collision joueur ↔ bonus
-//         for (auto &[playerId, player] : allPlayers)
-//         {
-//             if (!player.alive)
-//                 continue;
-
-//             sf::Vector2f d = player.position - bonus.position;
-//             constexpr float radius = 18.f; // rayon de ramassage
-
-//             if (d.x * d.x + d.y * d.y <= radius * radius)
-//             {
-//                 Bonus::applyBonus(player, bonus);
-//                 collected = true;
-//                 anyBonusCollected = true;
-//                 break;
-//             }
-//         }
-
-//         if (collected)
-//         {
-//             // packetBroadcastBonusCollected(bonus.id);
-//             it = allBonuses.erase(it);
-//         }
-//         else
-//         {
-//             ++it;
-//         }
-//     }
-
-//     if (anyBonusCollected)
-//     {
-//         // packetBroadcastPlayers();
-//     }
-// }

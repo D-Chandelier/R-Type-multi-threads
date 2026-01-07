@@ -46,6 +46,7 @@ public:
     void packetReceivedId(ENetEvent &event);
     void packetReceivedPlayersPositions(ENetEvent &event);
     void packetReceivedBullets(ENetEvent &event);
+    void packetReceivedBulletSpawn(ENetEvent &event);
     void packetReceivedRocketState(ENetEvent &event);
     void packetReceivedInitLevel(ENetEvent &event);
     void packetReceivedWorldX(ENetEvent &event);

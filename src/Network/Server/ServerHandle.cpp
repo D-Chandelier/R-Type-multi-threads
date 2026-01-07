@@ -64,5 +64,5 @@ void Server::handleTypeDisconnect(ENetEvent event)
             break;
         }
     }
-    event.peer->data = nullptr; // bonne pratique ENet
+    event.peer->data = nullptr;
 }

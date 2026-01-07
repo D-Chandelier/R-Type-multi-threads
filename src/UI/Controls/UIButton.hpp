@@ -32,7 +32,7 @@ private:
 
     State state = State::Normal;
 
-    std::function<void()> onClick; // Callback clic
+    std::function<void()> onClick;
 
 public:
     UIButton() : sprite(texture),

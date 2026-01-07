@@ -3,8 +3,9 @@
 #include <map>
 #include <iostream>
 #include <enet/enet.h>
-
 #include "../Core/Config.hpp"
+
+class Server;
 
 static const std::array<sf::Color, 4> PlayerColors =
     {
@@ -58,4 +59,6 @@ struct RemotePlayer
             {Config::Get().playerArea.size.x * Config::Get().playerScale.x,
              Config::Get().playerArea.size.y * Config::Get().playerScale.y}};
     }
+
+    static void killAndRespawn(RemotePlayer &p, Server &s);
 };

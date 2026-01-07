@@ -1,6 +1,7 @@
 ﻿#pragma once
-#include "../Core/Config.hpp"
 #include <SFML/Graphics.hpp>
+#include "../Core/Config.hpp"
+#include "Enemies.hpp"
 
 class Client;
 class Server;
@@ -36,7 +37,7 @@ struct Bullet
     uint32_t id;
     sf::Vector2f position;
     sf::Vector2f velocity;
-    float damage;
+    float damage = 1.f;
     uint8_t ownerId;
     BulletOwner owner = BulletOwner::PLAYER;
     bool active = true;
@@ -62,7 +63,7 @@ struct Bullet
     // Coté SERVER
     static void updateBulletsServer(Server &server, float dt);
     static void updateRocketServer(Server &server, Bullet &m, float dt);
-
+    static void spawnTurretBullet(Enemy &t, Server &s);
     ////////////////
     inline static float radToDeg(float r)
     {

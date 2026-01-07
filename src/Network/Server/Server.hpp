@@ -37,16 +37,18 @@ public:
     void stop();
     void update(float dt);
 
-    void packetBroadcastPositions();              // envoie positions à tous les clients
-    void packetBroadcastBullets(const Bullet &b); // envoie les tirs à tous les clients
-    void packetBroadcastWorldX();                 // envoie la position monde à tous les clients
-    void packetBroadcastEnemyDestroyed(uint32_t id, sf::Vector2f pos);
+    void packetBroadcastPositions();
+    void packetBroadcastWorldX();
+
+    void packetBroadcastBullets(const Bullet &b);
+    void packetBroadcastBulletSpawn(Bullet &b);
     void packetBroadcastBulletDestroyed(uint32_t bulletId);
-    void packetBroadcastEnemies();
     void packetBroadcastRocket(Bullet &b);
-    void packetBroadcastBonuses();
+
+    void packetBroadcastEnemyDestroyed(uint32_t id, sf::Vector2f pos);
+    void packetBroadcastEnemies();
+
     void packetBroadcastBonusSpawn(const Bonus &b);
-    void packetBroadcastRemoveBonus(uint32_t id);
     void packetBroadcastBonusDestroy(uint32_t id);
 
     void packetSendAllSegments(ENetPeer *peer);
@@ -59,7 +61,6 @@ public:
 
     void updateSegment();
     void updateEnemies(float dt);
-    // void updateBonuses(float dt);
 
     void handleEnetService(float dt);
     void handleTypeConnect(ENetEvent event);
@@ -68,14 +69,9 @@ public:
 
     void playerCollision(RemotePlayer &player);
 
-    void killAndRespawn(RemotePlayer &p);
-    void spawnPlayerMissile(const sf::Vector2f &pos, uint32_t ownerId);
     uint32_t findClosestTarget(sf::Vector2f &from);
 
     void onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, RemotePlayer &killer);
-    // void spawnBonus(BonusType type, sf::Vector2f pos);
-    void applyBonus(RemotePlayer &player, Bonus &bonus);
-    float randomFloat(float min, float max);
 
     std::atomic_bool serverReady = false;
 
@@ -87,22 +83,23 @@ public:
     float worldX = 0.f;
 
     std::unordered_map<uint32_t, Bullet> allBullets;
+    uint32_t nextBulletId = 0;
+
     std::unordered_map<uint32_t, Enemy> allEnemies;
 
     std::unordered_map<uint32_t, Bonus> allBonuses;
     uint32_t nextBonusId = 0;
 
     std::map<uint32_t, RemotePlayer> allPlayers;
+    double gameStartTime = 0.0;
 
 private:
     ENetHost *host = nullptr;
     std::mutex mtx; // protège players
     BonusStats bonusStats;
 
-    uint32_t nextBulletId = 0;
     uint32_t nextEnemyId = 0;
 
-    double gameStartTime = 0.0;
     float positionAccumulator = 0.0f;                         // temps écoulé depuis dernier broadcast
     const float SERVER_TICK = 1.0f / Config::Get().frameRate; // 60 Hz
 };

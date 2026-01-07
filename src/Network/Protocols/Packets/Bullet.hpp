@@ -56,4 +56,19 @@ struct ServerBulletDestroyedPacket
     uint16_t bulletIndex;
 };
 
+struct ServerBulletSpawnPacket
+{
+    struct Header
+    {
+        uint8_t type;
+        uint8_t code;
+    } header;
+    uint32_t id;
+    uint8_t type;
+    float x, y;
+    float vx, vy;
+    float dammage;
+    uint8_t owner;
+};
+
 #pragma pack(pop)

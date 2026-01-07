@@ -11,14 +11,10 @@ void Server::packetReceivedPlayerPosition(ENetEvent event, float dt)
         return;
 
     RemotePlayer &player = it->second;
-
-    // 1) Mettre à jour la vélocité
     player.velocity = sf::Vector2f(p->velX, p->velY);
-
-    // 2) Mettre à jour la position serveur
     player.position += player.velocity * dt;
 
-    // 3) Vérifier collisions
+    // Vérifier collisions
     playerCollision(player);
 }
 
@@ -33,7 +29,6 @@ void Server::packetReceivedBulletShoot(ENetEvent event)
     if (!shooter)
         return;
 
-    // Utiliser la position envoyée par le client
     sf::Vector2f spawnPos(p->x, p->y);
 
     sf::Vector2f dir{p->velX, p->velY};

@@ -72,6 +72,7 @@ void Enemy::updateTurret(float dt, float worldX)
     if (shootCooldown <= 0.f)
     {
         shootCooldown += TURRET_FIRE_INTERVAL;
-        wantsToShoot = true;
+        if (position.x - worldX < Config::Get().windowSize.x)
+            wantsToShoot = true;
     }
 }

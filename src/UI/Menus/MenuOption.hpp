@@ -14,7 +14,7 @@ public:
     void update(float dt, sf::RenderWindow &w) override;
     void handleEvent(const sf::Event &e, sf::RenderWindow &w) override;
     void draw(sf::RenderWindow &w) override;
-    void reset() override; // { action = MenuAction::NONE; };
+    void reset() override;
 
     MenuAction getAction() const override { return action; };
 

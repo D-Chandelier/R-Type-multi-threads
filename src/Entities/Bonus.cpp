@@ -199,11 +199,8 @@ void Bonus::updateBonusesServer(Server &server, float dt)
 bool Bonus::checkCollision(const Bonus &b, const RemotePlayer &p, float worldX)
 {
     // Hitbox joueur (monde)
-    sf::FloatRect playerBox(
-        {p.position.x + worldX + Config::Get().playerArea.size.x / 2, // + Config::Get().playerArea.size.x / 2,
-         p.position.y + Config::Get().playerArea.size.y / 2},         //- Config::Get().playerArea.size.y / 2},
-        {Config::Get().playerArea.size.x * 2,
-         Config::Get().playerArea.size.y * 2});
+    sf::FloatRect playerBox(p.getBounds());
+    playerBox.position.x += worldX;
 
     // Hitbox bonus (monde)
     sf::FloatRect bonusBox(
@@ -213,11 +210,11 @@ bool Bonus::checkCollision(const Bonus &b, const RemotePlayer &p, float worldX)
          BONUS_HEIGHT});
 
     // Tolérance arcade
-    constexpr float margin = 6.f;
-    playerBox.position.x -= margin;
-    playerBox.position.y -= margin;
-    playerBox.size.x += margin * 2.f;
-    playerBox.size.y += margin * 2.f;
+    constexpr float margin = 36.f;
+    // playerBox.position.x += margin;
+    playerBox.position.y += margin;
+    // playerBox.size.x -= margin * 2.f;
+    playerBox.size.y -= margin;
 
     return playerBox.findIntersection(bonusBox).has_value();
 }
@@ -232,7 +229,7 @@ void Bonus::spawnBonus(BonusType type, sf::Vector2f pos, Server &server)
     b.position = pos;
     b.velocity = {Config::Get().speed * 1.75f, 0.f};
     b.time = 0.f;
-    b.amplitude = (Config::Get().windowSize.y - pos.y) * 0.5f;
+    b.amplitude = (Config::Get().windowSize.y - pos.y);
     b.angularSpeed = 0.8f;
     server.allBonuses.emplace(b.id, b);
 

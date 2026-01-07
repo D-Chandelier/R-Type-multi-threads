@@ -17,7 +17,7 @@ namespace Segments
         std::uniform_int_distribution<int> niv(1, GROUND_HEIGHT);
         int nbNiv = niv(terrain.rng) / TILE;
 
-        const float groundY = Config::Get().windowSize.y - TILE * (nbNiv + 1); // GROUND_HEIGHT;
+        const float groundY = Config::Get().windowSize.y - TILE * (nbNiv + 1);
         const int tilesX = static_cast<int>(SEGMENT_WIDTH / TILE);
         int tilesY = static_cast<int>(GROUND_HEIGHT / TILE);
 

@@ -14,8 +14,8 @@ class MenuServersList : public IMenu
 {
     std::vector<DiscoveredServer> servers;
     std::vector<sf::Text> serverTexts;
-    std::mutex serversMutex; // protège l'accès concurrent
-    std::mutex testMutex;    // protège l'accès concurrent
+    std::mutex serversMutex;
+    std::mutex testMutex;
     bool refreshRequested = false;
     Client &client;
     NetworkDiscovery &nd;
@@ -34,8 +34,8 @@ class MenuServersList : public IMenu
     UIButton buttonTest;
     sf::Text testStatus;
 
-    bool testing = false;       // indique si un test est en cours
-    std::string lastTestResult; // vide si aucun
+    bool testing = false;
+    std::string lastTestResult;
     sf::Color lastTestColor = sf::Color::Transparent;
 
 public:

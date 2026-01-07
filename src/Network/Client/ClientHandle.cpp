@@ -44,6 +44,9 @@ void Client::handleTypeReceive(ENetEvent &event)
             case static_cast<uint8_t>(ServerMsg::BULLET_SHOOT):
                 packetReceivedBullets(event);
                 break;
+            case static_cast<uint8_t>(ServerMsg::BULLET_SPAWN):
+                packetReceivedBulletSpawn(event);
+                break;
             case static_cast<uint8_t>(ServerMsg::ROCKET_STATE):
                 packetReceivedRocketState(event);
                 break;

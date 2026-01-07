@@ -53,8 +53,9 @@ void Bullet::buildBulletQuad(const Bullet &b, float angle, sf::VertexArray &bVA)
 {
     float w = BULLET_WIDTH;
     float h = BULLET_HEIGHT;
-
-    sf::Color color = BULLET_COLOR;
+    sf::Color color = sf::Color::Yellow;
+    if (b.owner == BulletOwner::PLAYER)
+        color = BULLET_COLOR;
 
     sf::Vector2f local[4] =
         {
@@ -73,6 +74,8 @@ void Bullet::buildBulletQuad(const Bullet &b, float angle, sf::VertexArray &bVA)
     bVA.append({world[0], color});
     bVA.append({world[2], color});
     bVA.append({world[3], color});
+
+    // std::cout << "VA bullets vertices: " << bVA.getVertexCount() << "\n";
 }
 
 void Bullet::buildRocketQuad(const Bullet &b, float angle, sf::VertexArray &rVA)
@@ -143,7 +146,7 @@ void Bullet::updateBulletsServer(Server &server, float dt)
 
         for (auto &[id, e] : server.allEnemies)
         {
-            if (!e.active)
+            if (!e.active || b.owner == BulletOwner::ENEMY)
                 continue;
 
             sf::Vector2f d = sf::Vector2f{b.position.x + server.worldX, b.position.y} - e.position;
@@ -154,8 +157,9 @@ void Bullet::updateBulletsServer(Server &server, float dt)
                 destroyed = true;
 
                 if (e.pv > 0)
+                {
                     e.pv -= b.damage;
-
+                }
                 if (e.pv <= 0)
                 {
                     server.packetBroadcastEnemyDestroyed(id, e.position);
@@ -164,6 +168,25 @@ void Bullet::updateBulletsServer(Server &server, float dt)
                     anyEnemiesDestroyed = true;
                     // server.packetBroadcastEnemyDestroyed(e.id, e.position);
                     server.onEnemyDestroyed(EnemyType::TURRET, e.position, server.allPlayers[b.ownerId]);
+                }
+                break;
+            }
+        }
+        for (auto &[id, p] : server.allPlayers)
+        {
+            if (!p.alive || b.owner == BulletOwner::PLAYER)
+                continue;
+            if (p.getBounds().contains(b.position))
+            {
+                b.active = false;
+                destroyed = true;
+
+                if (p.pv > 0)
+                    p.pv -= b.damage;
+
+                if (p.pv <= 0)
+                {
+                    RemotePlayer::killAndRespawn(p, server);
                 }
                 break;
             }
@@ -248,4 +271,20 @@ void Bullet::updateRocketServer(Server &server, Bullet &m, float dt)
     m.position += m.velocity * dt;
 
     server.packetBroadcastRocket(m);
+}
+
+void Bullet::spawnTurretBullet(Enemy &t, Server &s)
+{
+    Bullet b;
+    b.id = s.nextBulletId++;
+    b.position = t.position;
+    b.position.x -= s.worldX;
+    b.velocity = {-LEVEL_SCROLL_SPEED - 200.f, -200.f}; // exemple
+    b.active = true;
+    b.owner = BulletOwner::ENEMY;
+    b.ownerId = t.id;
+
+    s.allBullets.emplace(b.id, b);
+
+    s.packetBroadcastBulletSpawn(b);
 }

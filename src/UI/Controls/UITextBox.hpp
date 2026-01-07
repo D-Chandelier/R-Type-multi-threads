@@ -198,7 +198,7 @@ struct UITextBox
             {
                 handleKey(k->scancode);
             }
-            return; // IMPORTANT : on ne traite rien d'autre
+            return;
         }
 
         if (auto *t = e.getIf<sf::Event::TextEntered>())

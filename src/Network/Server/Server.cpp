@@ -36,7 +36,6 @@ bool Server::start(uint16_t port)
     while (terrain.nextSegmentX < worldX + lookahead)
         Segments::generateNextSegment(terrain);
 
-    // Nettoyage optionnel
     while (!terrain.segments.empty() &&
            terrain.segments.front().startX + SEGMENT_WIDTH < worldX - cleanupMargin)
     {

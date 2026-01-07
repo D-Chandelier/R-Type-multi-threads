@@ -22,7 +22,7 @@ class Game
 public:
     Game();
     void run();
-    void runServer(); //(Server *server);
+    void runServer();
     void runClient();
     void stopThreads();
 
@@ -65,7 +65,7 @@ private:
 
     GameState state = GameState::MENU_MAIN;
 
-    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA; //, bulletsVA, rocketsVA;
+    sf::VertexArray backgroundVA_1, backgroundVA_2, playersVA;
 
     double background_1_OffsetX = 0.0;
     double background_1_OffsetY = 0.0;
