@@ -71,8 +71,7 @@ public:
             s.color = sf::Color(r, g, b);
         }
 
-        // Animation titre
-        float hue = std::fmod(timeAccumulator * 200.f, 360.f);
+                float hue = std::fmod(timeAccumulator * 200.f, 360.f);
         auto hsvToRgb = [](float h, float s, float v) -> sf::Color
         {
             float c = v * s;
@@ -146,9 +145,7 @@ public:
     virtual void handleEvent(const sf::Event &, sf::RenderWindow &) = 0;
     virtual void draw(sf::RenderWindow &) = 0;
 
-    // Quand un menu veut quitter / changer d’écran
     virtual MenuAction getAction() const = 0;
 
-    // Pour réinitialiser l’état du menu quand on y retourne
     virtual void reset() {};
 };

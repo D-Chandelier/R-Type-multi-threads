@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <cstdint>
+#include <string>
 
 #pragma pack(push, 1)
 
@@ -20,20 +21,15 @@ struct ServerSegmentPacket
         uint8_t code;
     } header;
 
-    uint8_t type; // SegmentType
+    uint8_t type;
     float startX;
     uint8_t blockCount;
     struct BlockData
     {
         float x, y, w, h;
         uint8_t visual;
-        bool hasTurret;
+        uint16_t tileId = 1;
     } blocks[64];
-    uint8_t turretCount;
-    struct TurretData
-    {
-        float x, y;
-    } turrets[64];
 };
 
 struct ServerAllSegmentsPacket
@@ -47,7 +43,7 @@ struct ServerAllSegmentsBlockPacket
 {
     float x, y, w, h;
     uint8_t visual;
-    bool hasTurret;
+    uint16_t tileId;
 };
 
 #pragma pack(pop)

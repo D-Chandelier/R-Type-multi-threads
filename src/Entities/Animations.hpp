@@ -12,8 +12,8 @@ struct Explosion
 
     sf::Sprite sprite;
     int frame = 0;
-    int frameCount = 10;     // nombre total de frames
-    float frameTime = 0.06f; // durée d’une frame (25 fps)
+    int frameCount = 10;
+    float frameTime = 0.06f;
     float timer = 0.f;
 
     int frameWidth;

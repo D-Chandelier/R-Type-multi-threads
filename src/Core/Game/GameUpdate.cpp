@@ -6,11 +6,11 @@ void Game::update(float dt)
     {
         currentMenu->update(dt, window);
         menuBackground.update(dt);
-        handleMenuAction(); // <-- important
+        handleMenuAction();
     }
     else if (state == GameState::IN_GAME)
     {
-        updateGameplay(dt); // <-- ta future logique in-game
+        updateGameplay(dt);
     }
 }
 
@@ -38,11 +38,9 @@ void Game::updateBackgrounds()
         static_cast<float>(gameTime) * client.backgroundScrollSpeed * 1.5f,
         texH);
 
-    // offset horizontal ou vertical
-    float offsetX = background_1_OffsetX; // déjà calculé
-    float offsetY = background_1_OffsetY; // pour vertical
+    float offsetX = background_1_OffsetX;
+    float offsetY = background_1_OffsetY;
 
-    // Scroll horizontal + vertical, en boucle grâce à setRepeated(true)
     backgroundVA_1[0].texCoords = {offsetX, offsetY};
     backgroundVA_1[1].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY};
     backgroundVA_1[2].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
@@ -50,8 +48,8 @@ void Game::updateBackgrounds()
     backgroundVA_1[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
     backgroundVA_1[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
 
-    offsetX = background_2_OffsetX; // déjà calculé
-    offsetY = background_2_OffsetY; // pour vertical
+    offsetX = background_2_OffsetX;
+    offsetY = background_2_OffsetY;
     backgroundVA_2[0].texCoords = {offsetX, offsetY};
     backgroundVA_2[1].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY};
     backgroundVA_2[2].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
@@ -59,10 +57,10 @@ void Game::updateBackgrounds()
     backgroundVA_2[4].texCoords = {offsetX + static_cast<float>(winSize.x), offsetY + static_cast<float>(winSize.y)};
     backgroundVA_2[5].texCoords = {offsetX, offsetY + static_cast<float>(winSize.y)};
 
-    sf::Color alphaColor(255, 255, 255, 128); // 50% transparent
+    sf::Color alphaColor(255, 255, 255, 128);
 
     for (size_t i = 0; i < backgroundVA_2.getVertexCount(); ++i)
-        backgroundVA_2[i].color = alphaColor; // 50% transparent
+        backgroundVA_2[i].color = alphaColor;
 }
 
 void Game::updatePlayers()
@@ -83,13 +81,12 @@ void Game::updatePlayers()
         if (p.invulnerable)
         {
             double t = Utils::localTimeNow() - p.respawnTime;
-            visible = static_cast<int>(t * 10) % 2 == 0; // 10 Hz
+            visible = static_cast<int>(t * 10) % 2 == 0;
         }
 
         if (!visible)
             continue;
 
-        // interpolation
         double delta = Utils::localTimeNow() - p.lastUpdateTime;
         float alpha = static_cast<float>(delta / (1.f / Config::Get().frameRate));
         alpha = std::clamp(alpha, 0.f, 1.f);

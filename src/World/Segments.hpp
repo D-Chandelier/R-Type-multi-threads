@@ -3,34 +3,72 @@
 #include <vector>
 #include "BlockVisual.hpp"
 #include "../Entities/Enemies.hpp"
-
-constexpr float SEGMENT_WIDTH = 512.f;
-constexpr float GROUND_HEIGHT = 128.f;
-constexpr float TILE = 64.f;
+#include "Level.hpp"
 
 class Terrain;
+class Server;
 
 enum class SegmentType
 {
-    Flat,
+    None,
+    Full,
     Hole,
-    Corridor,
-    TurretZone
+    Left,
+    Right,
+    Middle
+};
+
+enum class TileType
+{
+    Default,
+    Stone,
+    Ground,
+    Metal,
+    Platform,
+    Bridge,
+    Ceiling
+
+};
+
+struct ModuleDesc
+{
+    SegmentType type = SegmentType::Full;
+    int level = 0;
+    int height = 1;
+    uint16_t tileId;
+};
+
+struct TierMask
+{
+    bool left = false;
+    bool mid = false;
+    bool right = false;
+};
+
+struct LevelSegmentDesc
+{
+    float atX = 0.f;
+    std::string tag;
+
+    std::vector<ModuleDesc> modules;
+
+    std::vector<TurretPlacement> turrets;
 };
 
 struct TerrainSegment
 {
     float startX;
     SegmentType type;
-    std::vector<TerrainBlock> blocks; // zones solides
-
-    bool isOffScreen() const
-    {
-        return startX + SEGMENT_WIDTH < 0.f;
-    }
+    std::vector<TerrainBlock> blocks;
 };
 
-namespace Segments
+namespace Segment
 {
-    TerrainSegment generateNextSegment(Terrain &terrain);
+
+    SegmentType segmentTypeFromString(const std::string &s);
+    TileType tileTypeFromString(const std::string &s);
+    void updateSegment(Server &s);
+    TerrainSegment buildSegment(const LevelSegmentDesc &desc);
+    BlockVisual getGroundVisual(int x, int tierTiles);
+    TierMask getTierMask(SegmentType type);
 }

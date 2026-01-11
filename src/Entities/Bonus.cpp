@@ -40,10 +40,8 @@ void Bonus::updateBonusesClient(Client &client, float dt)
     fVA.setPrimitiveType(sf::PrimitiveType::Triangles);
     scVA.setPrimitiveType(sf::PrimitiveType::Triangles);
 
-    // for (const auto &[id, b] : client.allBonuses)
     for (auto &b : activeBonuses)
     {
-        // float angle = Bonus::bulletAngle(b.velocity) * 3.14159265f / 180.f;
         switch (b.type)
         {
         case BonusType::RocketX3:
@@ -65,7 +63,6 @@ void Bonus::updateBonusesClient(Client &client, float dt)
             break;
         }
     }
-    // Remplacer map client.allBonuses
     std::unordered_map<uint32_t, Bonus> newMap;
     for (auto &b : activeBonuses)
         newMap.emplace(b.id, b);
@@ -91,8 +88,6 @@ void Bonus::buildBonusQuad(const Bonus &b, sf::VertexArray &va)
     }
 
     sf::Vector2f p = b.position;
-    // p.x = b.position.x - client.targetWorldX;
-    // p.y = b.position.y;
 
     sf::Vector2f v0 = {p.x - w * 0.5f, p.y - h * 0.5f};
     sf::Vector2f v1 = {p.x + w * 0.5f, p.y - h * 0.5f};
@@ -161,7 +156,6 @@ void Bonus::updateBonusesServer(Server &server, float dt)
 
         b.time += dt;
 
-        // Trajectoire réelle
         b.position.x =
             b.spawnPos.x + b.velocity.x * b.time;
 
@@ -169,7 +163,6 @@ void Bonus::updateBonusesServer(Server &server, float dt)
             b.spawnPos.y +
             std::sin(b.angularSpeed * b.time + b.phase) * b.amplitude;
 
-        // Collision joueur ↔ bonus
         bool collected = false;
         for (auto &[pid, p] : server.allPlayers)
         {
@@ -184,7 +177,6 @@ void Bonus::updateBonusesServer(Server &server, float dt)
             }
         }
 
-        // Hors écran
         if (collected || b.position.x - server.worldX <= -BONUS_WIDTH)
         {
             uint32_t destroyedId = b.id;
@@ -198,22 +190,17 @@ void Bonus::updateBonusesServer(Server &server, float dt)
 
 bool Bonus::checkCollision(const Bonus &b, const RemotePlayer &p, float worldX)
 {
-    // Hitbox joueur (monde)
     sf::FloatRect playerBox(p.getBounds());
     playerBox.position.x += worldX;
 
-    // Hitbox bonus (monde)
     sf::FloatRect bonusBox(
         {b.position.x,
          b.position.y},
         {BONUS_WIDTH,
          BONUS_HEIGHT});
 
-    // Tolérance arcade
     constexpr float margin = 36.f;
-    // playerBox.position.x += margin;
     playerBox.position.y += margin;
-    // playerBox.size.x -= margin * 2.f;
     playerBox.size.y -= margin;
 
     return playerBox.findIntersection(bonusBox).has_value();
@@ -225,7 +212,7 @@ void Bonus::spawnBonus(BonusType type, sf::Vector2f pos, Server &server)
     b.id = server.nextBonusId++;
     b.type = type;
     b.phase = randomFloat(0.f, 2.f * 3.14159265f);
-    b.spawnPos = pos; // - sf::Vector2f{0.f, b.phase};
+    b.spawnPos = pos;
     b.position = pos;
     b.velocity = {Config::Get().speed * 1.75f, 0.f};
     b.time = 0.f;
@@ -233,7 +220,6 @@ void Bonus::spawnBonus(BonusType type, sf::Vector2f pos, Server &server)
     b.angularSpeed = 0.8f;
     server.allBonuses.emplace(b.id, b);
 
-    // Envoi d’un packet spawn uniquement
     server.packetBroadcastBonusSpawn(b);
 }
 

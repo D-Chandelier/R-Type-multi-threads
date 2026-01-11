@@ -40,7 +40,6 @@ void Client::packetReceivedAllSegments(ENetEvent &event)
     const uint8_t *ptr = event.packet->data;
     const uint8_t *end = ptr + event.packet->dataLength;
 
-    // Header
     if (ptr + sizeof(ServerAllSegmentsHeader) > end)
         return;
 
@@ -71,7 +70,7 @@ void Client::packetReceivedAllSegments(ENetEvent &event)
                 TerrainBlock{
                     sf::FloatRect{{blk->x, blk->y}, {blk->w, blk->h}},
                     static_cast<BlockVisual>(blk->visual),
-                    blk->hasTurret != 0});
+                    static_cast<uint16_t>(blk->tileId)});
         }
 
         terrain.segments.push_back(std::move(seg));
@@ -92,10 +91,11 @@ void Client::packetReceivedSegment(ENetEvent &event)
     for (int i = 0; i < p->blockCount; ++i)
     {
         const auto &b = p->blocks[i];
+
         seg.blocks.emplace_back(
             sf::FloatRect{{b.x, b.y}, {b.w, b.h}},
             static_cast<BlockVisual>(b.visual),
-            b.hasTurret != 0);
+            static_cast<uint16_t>(b.tileId));
     }
 
     terrain.segments.push_back(seg);
@@ -116,8 +116,9 @@ void Client::packetReceivedEnemies(ENetEvent &event)
         const auto &s = p->enemy[i];
 
         Enemy t({s.x, s.y});
-        t.type = s.type;
+        t.archetype = s.archetype;
         t.velocity = {s.velX, s.velY};
+        t.size = {s.sizeX, s.sizeY};
         t.active = s.isActive == 1;
 
         newEnemies.emplace(s.id, t);
@@ -133,16 +134,14 @@ void Client::packetReceivedBonuses(ENetEvent &event)
 {
     const uint8_t *ptr = event.packet->data;
 
-    // Skip header
     ptr += 2;
 
-    // Count
     uint32_t count = 0;
     std::memcpy(&count, ptr, sizeof(count));
     ptr += sizeof(count);
 
     if (count > 128)
-        return; // sécurité
+        return;
 
     std::unordered_map<uint32_t, Bonus> newBonuses;
     newBonuses.reserve(count);
@@ -151,17 +150,14 @@ void Client::packetReceivedBonuses(ENetEvent &event)
     {
         Bonus t;
 
-        // ID
         std::memcpy(&t.id, ptr, sizeof(t.id));
         ptr += sizeof(t.id);
 
-        // Type
         uint16_t rawType;
         std::memcpy(&rawType, ptr, sizeof(rawType));
         t.type = static_cast<BonusType>(rawType);
         ptr += sizeof(rawType);
 
-        // Floats
         float vals[10];
         std::memcpy(vals, ptr, sizeof(vals));
         t.spawnPos = {vals[0], vals[1]};
@@ -173,13 +169,11 @@ void Client::packetReceivedBonuses(ENetEvent &event)
         t.phase = vals[9];
         ptr += sizeof(vals);
 
-        // Active
         int active = 0;
         std::memcpy(&active, ptr, sizeof(active));
         t.active = (active == 1);
         ptr += sizeof(active);
 
-        // Sécurité : ignore float corrompu
         if (!std::isfinite(t.position.x) || !std::isfinite(t.position.y))
             continue;
 
@@ -190,12 +184,6 @@ void Client::packetReceivedBonuses(ENetEvent &event)
         std::lock_guard<std::mutex> lock(bonusesMutex);
         allBonuses.swap(newBonuses);
     }
-
-    // Debug
-    for (auto &[id, bonus] : allBonuses)
-        std::cout << "[BONUS] id: " << id
-                  << " position: " << bonus.position.x
-                  << "," << bonus.position.y << "\n";
 }
 
 void Client::packetReceivedBonusSpawn(ENetEvent &event)
@@ -228,44 +216,6 @@ void Client::packetReceivedBonusDestroy(ENetEvent &event)
     allBonuses.erase(p->id);
 }
 
-// void Client::packetReceivedBonuses(ENetEvent &event)
-// {
-//     if (event.packet->dataLength != sizeof(ServerBonusesPacket))
-//         return;
-
-//     const auto *p = reinterpret_cast<const ServerBonusesPacket *>(event.packet->data);
-
-//     std::unordered_map<uint32_t, Bonus> newBonuses;
-//     newBonuses.reserve(p->count);
-
-//     for (uint8_t i = 0; i < p->count; ++i)
-//     {
-//         const auto &s = p->bonus[i];
-
-//         Bonus t;
-//         t.time = s.time;
-//         t.spawnPos = {s.sx, s.sy};
-//         t.position = {s.x, s.y};
-//         t.velocity = {s.vx, s.vy};
-//         t.type = s.type;
-//         t.amplitude = s.amplitude;
-//         t.angularSpeed = s.angularSpeed;
-//         t.phase = s.phase;
-//         t.active = s.active == 1;
-
-//         newBonuses.emplace(s.id, t);
-//     }
-
-//     {
-//         std::lock_guard<std::mutex> lock(bonusesMutex);
-//         allBonuses.swap(newBonuses);
-//     }
-//     for (auto &[id, bonus] : allBonuses)
-//     {
-//         std::cout << "[BONUS] id: " << id << "position: " << bonus.position.x << "," << bonus.position.y << "\n";
-//     }
-// }
-
 void Client::packetReceivedPlayersPositions(ENetEvent &event)
 {
     if (event.packet->dataLength != sizeof(ServerPositionPacket))
@@ -295,7 +245,6 @@ void Client::packetReceivedPlayersPositions(ENetEvent &event)
         rp.fireRate = p->players[i].fireRate;
     }
 
-    // Supprimer uniquement les joueurs distants qui ne sont plus dans le snapshot
     for (auto it = allPlayers.begin(); it != allPlayers.end();)
     {
         if (it->first != Config::Get().playerId && seenIds.find(it->first) == seenIds.end())
@@ -315,7 +264,6 @@ void Client::packetReceivedBullets(ENetEvent &event)
 
     auto *p = reinterpret_cast<ServerBulletPacket *>(event.packet->data);
 
-    // Anti-duplication (important)
     if (allBullets.contains(p->bulletId))
         return;
 
@@ -336,7 +284,6 @@ void Client::packetReceivedBulletSpawn(ENetEvent &e)
 
     auto *p = reinterpret_cast<ServerBulletSpawnPacket *>(e.packet->data);
 
-    // Anti-duplication (important)
     if (allBullets.contains(p->id))
         return;
 
@@ -350,7 +297,6 @@ void Client::packetReceivedBulletSpawn(ENetEvent &e)
     b.active = true;
 
     allBullets.emplace(b.id, b);
-    // std::cout << "Enemy shoot spawn: " << b.id << "\n";
 }
 
 void Client::packetReceivedRocketState(ENetEvent &event)
@@ -363,7 +309,6 @@ void Client::packetReceivedRocketState(ENetEvent &event)
 
     Bullet &b = it->second;
 
-    // ⚠️ IMPORTANT
     if (b.type == BulletType::LINEAR)
         return;
 
@@ -392,16 +337,11 @@ void Client::packetReceivedEnemyDestroyed(ENetEvent &event)
 
     auto *p = reinterpret_cast<ServerEnemyDestroyedPacket *>(event.packet->data);
 
-    // std::cout << "Packet received EnemyDestroyed : " <<
-
     auto it = allEnemies.find(p->id);
     if (it != allEnemies.end())
     {
+        Explosion::spawnExplosion(*this, {p->x + it->second.size.x, p->y + it->second.size.y / 2});
         it->second.active = false;
-
-        // Création de l’explosion
-        Explosion::spawnExplosion(*this, {p->x, p->y});
-        // {it->second.position.x - targetWorldX, it->second.position.y});
     }
 }
 

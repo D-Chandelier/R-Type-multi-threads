@@ -27,7 +27,6 @@ void Server::playerCollision(RemotePlayer &p)
             float overlapX = min(dx1, dx2);
             float overlapY = min(dy1, dy2);
 
-            // Résolution sur l’axe le plus faible
             if (overlapX < overlapY)
             {
                 if (player.position.x < b.rect.position.x)
@@ -66,6 +65,26 @@ void Server::playerCollision(RemotePlayer &p)
                     RemotePlayer::killAndRespawn(p, *this);
                     return;
                 }
+        }
+    }
+
+    for (auto &[id, enemy] : allEnemies)
+    {
+        if (!enemy.active)
+            continue;
+
+        sf::FloatRect enemyRect = {enemy.position, enemy.size};
+        enemyRect.position.x -= worldX;
+        if (player.findIntersection(enemyRect))
+        {
+            if (!p.invulnerable)
+            {
+                p.pv--;
+
+                enemy.active = false;
+                packetBroadcastEnemyDestroyed(id, enemy.position);
+                onEnemyDestroyed(enemy, enemy.position, p);
+            }
         }
     }
     p.position.x = std::clamp(

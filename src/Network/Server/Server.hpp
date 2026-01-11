@@ -26,6 +26,7 @@
 
 #include "../../World/Terrain.hpp"
 #include "../../World/BlockVisual.hpp"
+#include "../../World/Level.hpp"
 
 class Server
 {
@@ -39,6 +40,8 @@ public:
 
     void packetBroadcastPositions();
     void packetBroadcastWorldX();
+
+    void packetBroadcastSegment(const TerrainSegment &seg);
 
     void packetBroadcastBullets(const Bullet &b);
     void packetBroadcastBulletSpawn(Bullet &b);
@@ -59,7 +62,6 @@ public:
     void packetReceivedBulletShoot(ENetEvent event);
     void packetReceivedRejoin(ENetEvent event);
 
-    void updateSegment();
     void updateEnemies(float dt);
 
     void handleEnetService(float dt);
@@ -70,8 +72,8 @@ public:
     void playerCollision(RemotePlayer &player);
 
     uint32_t findClosestTarget(sf::Vector2f &from);
-
-    void onEnemyDestroyed(EnemyType enemyType, const sf::Vector2f &pos, RemotePlayer &killer);
+    RemotePlayer *findClosestAlivePlayer(const sf::Vector2f &pos);
+    void onEnemyDestroyed(Enemy &enemy, const sf::Vector2f &pos, RemotePlayer &killer);
 
     std::atomic_bool serverReady = false;
 
@@ -86,6 +88,7 @@ public:
     uint32_t nextBulletId = 0;
 
     std::unordered_map<uint32_t, Enemy> allEnemies;
+    std::vector<EnemyRuntime> runtimeEnemies;
 
     std::unordered_map<uint32_t, Bonus> allBonuses;
     uint32_t nextBonusId = 0;
@@ -93,13 +96,15 @@ public:
     std::map<uint32_t, RemotePlayer> allPlayers;
     double gameStartTime = 0.0;
 
+    LevelRuntime runtimeLevel;
+
 private:
     ENetHost *host = nullptr;
-    std::mutex mtx; // protège players
+    std::mutex mtx;
     BonusStats bonusStats;
 
     uint32_t nextEnemyId = 0;
 
-    float positionAccumulator = 0.0f;                         // temps écoulé depuis dernier broadcast
-    const float SERVER_TICK = 1.0f / Config::Get().frameRate; // 60 Hz
+    float positionAccumulator = 0.0f;
+    const float SERVER_TICK = 1.0f / Config::Get().frameRate;
 };

@@ -1,0 +1,7 @@
+﻿bonus:
+  fire_rate:
+    texture: "assets/bonus/FireRateUp.png"
+  healt_x1:
+    texture: "assets/bonus/HealtX1.png"
+  rocket_x3:
+    texture: "assets/bonus/RocketX3.png"

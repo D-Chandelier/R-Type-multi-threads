@@ -15,10 +15,10 @@ struct BonusState
     float sx, sy = 0.f;
     float x, y = 0.f;
     float vx, vy = 0.f;
-    float time = 0.f;         // temps depuis le spawn
-    float amplitude = 0.f;    // hauteur du cercle (ex: 300px)
-    float angularSpeed = 0.f; // rad/sec
-    float phase = 0.f;        // déphasage
+    float time = 0.f;
+    float amplitude = 0.f;
+    float angularSpeed = 0.f;
+    float phase = 0.f;
 
     int active = 0;
 };
@@ -46,10 +46,10 @@ struct ServerBonusSpawnPacket
     float sx, sy = 0.f;
     float x, y = 0.f;
     float vx, vy = 0.f;
-    float time = 0.f;         // temps depuis le spawn
-    float amplitude = 0.f;    // hauteur du cercle (ex: 300px)
-    float angularSpeed = 0.f; // rad/sec
-    float phase = 0.f;        // déphasage
+    float time = 0.f;
+    float amplitude = 0.f;
+    float angularSpeed = 0.f;
+    float phase = 0.f;
 
     int active = 0;
 };

@@ -20,8 +20,7 @@ class MenuServersList : public IMenu
     Client &client;
     NetworkDiscovery &nd;
 
-    // Sabler/loader
-    sf::VertexArray loader;
+        sf::VertexArray loader;
     sf::Text loaderText;
     float startAngle = 0.f;
 

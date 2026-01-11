@@ -12,7 +12,6 @@ public:
     Terrain();
 
     void init(uint32_t seed);
-    sf::IntRect getTextureRect(BlockVisual v);
 
     uint32_t levelSeed;
     uint32_t serverTick;

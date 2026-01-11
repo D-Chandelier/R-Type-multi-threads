@@ -15,7 +15,6 @@ void Server::packetSendAllSegments(ENetPeer *peer)
 
     uint8_t *ptr = p->data;
 
-    // Header
     ServerAllSegmentsHeader header;
     header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
     header.code = static_cast<uint8_t>(ServerMsg::ALL_SEGMENTS);
@@ -24,7 +23,6 @@ void Server::packetSendAllSegments(ENetPeer *peer)
     memcpy(ptr, &header, sizeof(header));
     ptr += sizeof(header);
 
-    // Segments
     for (const auto &seg : segments)
     {
         ServerSegmentPacket segPkt;
@@ -43,7 +41,7 @@ void Server::packetSendAllSegments(ENetPeer *peer)
             blk.w = b.rect.size.x;
             blk.h = b.rect.size.y;
             blk.visual = static_cast<uint8_t>(b.visual);
-            blk.hasTurret = b.hasTurret ? 1 : 0;
+            blk.tileId = b.tileId;
             memcpy(ptr, &blk, sizeof(blk));
             ptr += sizeof(blk);
         }
@@ -56,7 +54,7 @@ void Server::packetSendSegment(const TerrainSegment &seg, ENetPeer *peer)
 {
     ServerSegmentPacket p;
     p.header.type = static_cast<uint8_t>(PacketType::SERVER_MSG);
-    p.header.code = static_cast<uint8_t>(ServerMsg::NEW_SEGMENT); // Utilisez le code approprié pour l'envoi de segments
+    p.header.code = static_cast<uint8_t>(ServerMsg::NEW_SEGMENT);
     p.type = static_cast<uint8_t>(seg.type);
     p.startX = seg.startX;
     p.blockCount = static_cast<uint8_t>(seg.blocks.size());
@@ -67,14 +65,14 @@ void Server::packetSendSegment(const TerrainSegment &seg, ENetPeer *peer)
         p.blocks[i].w = seg.blocks[i].rect.size.x;
         p.blocks[i].h = seg.blocks[i].rect.size.y;
         p.blocks[i].visual = static_cast<uint8_t>(seg.blocks[i].visual);
-        p.blocks[i].hasTurret = seg.blocks[i].hasTurret ? 1 : 0;
+        p.blocks[i].tileId = seg.blocks[i].tileId;
     }
     for (const auto &[id, player] : allPlayers)
     {
         if (!player.peer)
             continue;
         ENetPacket *packet = enet_packet_create(&p, sizeof(p), 0);
-        enet_peer_send(peer, 1, packet); // channel 1 = terrain
+        enet_peer_send(peer, 1, packet);
     }
 }
 

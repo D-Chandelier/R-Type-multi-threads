@@ -22,7 +22,6 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     title.setOrigin(title.getLocalBounds().getCenter());
     title.setPosition({cx, cy * 3});
 
-    // TextBox IP
     tbIp.setText(Config::Get().serverIp);
     tbIp.setLabel("Adresse IP :");
     tbIp.setLabelSpacing(300.f);
@@ -31,7 +30,6 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     tbIp.setType(UITextBoxType::IP);
     tbIp.setPosition({cx - 20 - tbIp.getSize().x / 2.f, cy * 6.5f});
 
-    // TextBox Port
     tbPort.setText(std::to_string(Config::Get().serverPort));
     tbPort.setLabel("Port :");
     tbPort.setLabelSpacing(300.f);
@@ -40,17 +38,15 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     tbPort.setType(UITextBoxType::PORT);
     tbPort.setPosition({cx + 30.f - tbPort.getSize().x / 2.f, cy * 7});
 
-    // Bouton TEST
     buttonTest.setTexture("./assets/bt.png");
     buttonTest.setColor(sf::Color(128, 255, 128, 255));
-    // Taille d'une cellule
+
     int cellWidth = buttonTest.getTexture().getSize().x / 2;
     int cellHeight = buttonTest.getTexture().getSize().y / 7;
 
     buttonTest.setSpritesheetRects(
-        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
-        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
-    );
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}},
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}});
 
     buttonTest.setFont(Config::Get().font);
     buttonTest.setText("Try", 24, sf::Color::Black);
@@ -59,20 +55,17 @@ MenuServersList::MenuServersList(Client &cli, NetworkDiscovery &nd)
     buttonTest.onClickCallback([this]()
                                { this->buttonTest_Click(); });
 
-    // Label d’état
     testStatus.setCharacterSize(22);
     testStatus.setFillColor(sf::Color::Transparent);
     testStatus.setOrigin(testStatus.getLocalBounds().getCenter());
     testStatus.setPosition({cx, cy * 8 + -40});
 
-    // Bouton QUIT
     quit.setTexture("./assets/bt.png");
     quit.setColor(sf::Color(255, 64, 64, 64));
 
     quit.setSpritesheetRects(
-        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
-        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
-    );
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}},
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}});
 
     quit.setFont(Config::Get().font);
     quit.setText("RETOUR", 40, Config::Get().fontColor);
@@ -96,7 +89,7 @@ void MenuServersList::buttonTest_Click()
         std::thread([this]()
                     {
             
-            // Résolution IP
+            
             auto resolved = sf::IpAddress::resolve(tbIp.value);
             if (!resolved.has_value())
             {
@@ -223,14 +216,12 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
     tbIp.update(dt);
     buttonTest.update(w);
 
-    // Rotation
     startAngle += 180.f * dt;
     if (startAngle >= 360.f)
         startAngle -= 360.f;
 
     updateLoader();
 
-    // Scanner les serveurs toutes les secondes
     static float accumulator = 0.f;
     accumulator += dt;
     if (accumulator > 1.f)
@@ -239,7 +230,7 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
         if (!refreshRequested)
         {
             refreshRequested = true;
-            // Lance le scan dans un thread séparé
+
             std::thread([this]()
                         {
                 auto newServers = nd.getDiscoveredServers();
@@ -250,12 +241,12 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
                     if (uniqueSet.insert({s.ip, s.port}).second)
                         uniqueServers.push_back(s);
 
-                // Accès sécurisé
+                
                 {
                     std::lock_guard<std::mutex> lock(serversMutex);
                     servers = uniqueServers;
 
-                    // Recrée serverTexts dans le thread principal sécurisé
+                    
                     serverTexts.clear();
                     float cx = Config::Get().windowSize.x / 2.f;
                     float cy = Config::Get().windowSize.y / 10.f;
@@ -271,7 +262,7 @@ void MenuServersList::update(float dt, sf::RenderWindow &w)
                     }
                 }
                 refreshRequested = false; })
-                .detach(); // détaché pour ne pas bloquer
+                .detach();
         }
     }
 
@@ -313,11 +304,10 @@ void MenuServersList::handleEvent(const sf::Event &e, sf::RenderWindow &w)
 
     if (auto *m = e.getIf<sf::Event::MouseButtonPressed>())
     {
-        // Focus champ port et ip au clic
+
         tbPort.checkFocus(mp);
         tbIp.checkFocus(mp);
 
-        // Accès sécurisé pour servers
         if (hoveredIndex >= 0)
         {
             std::lock_guard<std::mutex> lock(serversMutex);

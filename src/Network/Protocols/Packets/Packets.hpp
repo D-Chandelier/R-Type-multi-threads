@@ -6,7 +6,7 @@
 #include "Enemies.hpp"
 #include "Bullet.hpp"
 #include "Player.hpp"
-#include "Segmant.hpp"
+#include "Segment.hpp"
 #include "Bonuses.hpp"
 
 enum class PacketType : uint8_t
@@ -46,8 +46,6 @@ enum class ServerMsg : uint8_t
     BONUS_DESTROYED
 };
 
-///////////////////////////////////////////////////////:
-
 #pragma pack(push, 1)
 
 struct PacketHeader
@@ -60,7 +58,7 @@ struct ServerAssignIdPacket
 {
     PacketHeader header;
     uint32_t id;
-    double serverStartTime; // secondes (horloge serveur)
+    double serverStartTime;
 };
 
 struct ClientRejoinPacket
@@ -71,19 +69,19 @@ struct ClientRejoinPacket
 
 struct InitLevelPacket
 {
-    PacketHeader header; // code=INIT_LEVEL
-    uint32_t seed;       // seed terrain
-    float worldX;        // position monde actuelle
-    float scrollSpeed;   // vitesse monde
-    float lookahead;     // SERVER_LOOKAHEAD
-    float cleanupMargin; // SERVER_CLEANUP_MARGIN
+    PacketHeader header;
+    uint32_t seed;
+    float worldX;
+    float scrollSpeed;
+    float lookahead;
+    float cleanupMargin;
 };
 struct WorldStatePacket
 {
-    PacketHeader header;   // code=INIT_LEVEL
-    uint32_t seed;         // seed terrain
-    float worldX;          // position monde actuelle
-    double serverGameTime; // temps serveur actuel
+    PacketHeader header;
+    uint32_t seed;
+    float worldX;
+    double serverGameTime;
 };
 
 #pragma pack(pop)

@@ -12,8 +12,8 @@
 
 enum class UITextBoxMode
 {
-    ABOVE, // label au-dessus
-    LEFT   // label à gauche
+    ABOVE,
+    LEFT
 };
 enum class UITextBoxType
 {
@@ -24,15 +24,14 @@ enum class UITextBoxType
 };
 struct UITextBox
 {
-    // Public
     std::string value = "";
     UITextBoxType type = UITextBoxType::TEXT;
 
     sf::Text label;
     sf::Text text;
 
-    sf::RectangleShape box;     // zone input
-    sf::RectangleShape outline; // contour
+    sf::RectangleShape box;
+    sf::RectangleShape outline;
 
     UITextBoxMode mode = UITextBoxMode::LEFT;
 
@@ -46,12 +45,10 @@ struct UITextBox
     sf::FloatRect bounds;
     sf::Vector2f totalSize;
 
-    // Curseur
     bool cursorVisible = true;
     float cursorTimer = 0.f;
 
-    // KeyCode
-    sf::Keyboard::Scancode scancodeKey = sf::Keyboard::Scancode::Unknown; // touche enregistrée
+    sf::Keyboard::Scancode scancodeKey = sf::Keyboard::Scancode::Unknown;
 
     UITextBox(const sf::Font &font) : type(UITextBoxType::TEXT),
                                       width(200),
@@ -149,12 +146,11 @@ struct UITextBox
         if (focused && cursorVisible)
         {
             sf::FloatRect tb = text.getLocalBounds();
-            sf::Vector2f textPos = text.getPosition(); // position centrale du texte
+            sf::Vector2f textPos = text.getPosition();
 
-            // Position du curseur : fin du texte
             sf::Vector2f cursorPos;
-            cursorPos.x = textPos.x - tb.size.x * 0.5f + tb.size.x + 5.f; // gauche du texte + largeur
-            cursorPos.y = textPos.y;                                      // centré verticalement
+            cursorPos.x = textPos.x - tb.size.x * 0.5f + tb.size.x + 5.f;
+            cursorPos.y = textPos.y;
 
             sf::RectangleShape cursor({2.f, text.getCharacterSize() * 0.75f});
             cursor.setOrigin({1.f, cursor.getSize().y * 0.5f});
@@ -191,7 +187,6 @@ struct UITextBox
         if (!focused)
             return;
 
-        // --- KEY BINDING ---
         if (type == UITextBoxType::KEY)
         {
             if (auto *k = e.getIf<sf::Event::KeyPressed>())
@@ -225,7 +220,7 @@ struct UITextBox
 private:
     void updateLayout()
     {
-        // Mesures des textes
+
         sf::FloatRect lb = label.getLocalBounds();
         sf::FloatRect tb = text.getLocalBounds();
 
@@ -240,37 +235,31 @@ private:
             totalSize.x = std::max(labelWidth, width);
             totalSize.y = labelHeight + labelSpacing + height;
 
-            // Position label centré
             label.setOrigin({lb.position.x + lb.size.x * 0.5f, lb.position.y + lb.size.y * 0.5f});
             label.setPosition({position.x - origin.x + totalSize.x * 0.5f,
                                position.y - origin.y + labelHeight * 0.5f});
 
-            // Position box
             box.setOrigin({width * 0.5f, height * 0.5f});
             box.setPosition({position.x - origin.x + totalSize.x * 0.5f,
                              position.y - origin.y + labelHeight + labelSpacing + height * 0.5f});
         }
         else
-        { // Label à gauche
+        {
             totalSize.x = labelSpacing + width;
             totalSize.y = std::max(labelHeight, height);
 
-            // Label
             label.setOrigin({lb.position.x, lb.position.y + lb.size.y * 0.5f});
             label.setPosition({position.x - labelSpacing / 2.f + width,
                                position.y + totalSize.y * 0.5f});
 
-            // Box
             box.setOrigin({width * 0.5f, height * 0.5f});
             box.setPosition({position.x - origin.x + labelSpacing + width * 0.5f,
                              position.y - origin.y + totalSize.y * 0.5f});
         }
 
-        // Texte centré dans la box
         text.setOrigin({tb.position.x + tb.size.x * 0.5f, tb.position.y + tb.size.y * 0.5f});
         text.setPosition(box.getPosition());
 
-        // Bounds global du widget
         bounds = {{position.x - origin.x,
                    position.y - origin.y},
                   {totalSize.x,
@@ -348,7 +337,7 @@ private:
 
     void handleKey(sf::Keyboard::Scancode sc)
     {
-        // Convertir la Key en Scancode puis en string
+
         value = Utils::keyToString(sc);
         scancodeKey = sc;
         updateLayout();

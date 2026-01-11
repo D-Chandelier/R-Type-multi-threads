@@ -42,7 +42,6 @@ void Game::handleMenuAction()
 {
     if (!currentMenu)
         return;
-    // Vérifie si le menu veut changer l’écran
     MenuAction a = currentMenu->getAction();
     if (a == MenuAction::NONE)
         return;
@@ -73,15 +72,14 @@ void Game::handleMenuAction()
         stopThreads();
 
         Config::Get().isServer = true;
-        running.store(true); // = true;
+        running.store(true);
 
-        // --- Démarrage serveur ---
         if (!server.start(Config::Get().serverPort))
         {
             std::cerr << "[Game] Impossible de démarrer le serveur.\n";
             break;
         }
-        serverThread = std::thread(&Game::runServer, this); //&server);
+        serverThread = std::thread(&Game::runServer, this);
 
         while (!server.serverReady)
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -92,7 +90,7 @@ void Game::handleMenuAction()
             break;
         }
 
-        clientThread = std::thread(&Game::runClient, this); // &client);
+        clientThread = std::thread(&Game::runClient, this);
 
         discoveryClient.startBroadcast(Config::Get().serverPort, Config::Get().discoveryPort);
 
@@ -103,10 +101,10 @@ void Game::handleMenuAction()
         stopThreads();
 
         Config::Get().isServer = false;
-        running.store(true); // = true;
+        running.store(true);
 
         client.start(Config::Get().serverIp.c_str(), Config::Get().serverPort);
-        clientThread = std::thread(&Game::runClient, this); // &client);
+        clientThread = std::thread(&Game::runClient, this);
 
         state = GameState::IN_GAME;
         break;
@@ -141,7 +139,7 @@ void Game::handleEventPlayerMove(float dt)
             }
             return;
         }
-        // --- Mouvement ---
+
         bool left = sf::Keyboard::isKeyPressed(Config::Get().keys.left);
         bool right = sf::Keyboard::isKeyPressed(Config::Get().keys.right);
         bool up = sf::Keyboard::isKeyPressed(Config::Get().keys.up);
@@ -158,17 +156,14 @@ void Game::handleEventPlayerMove(float dt)
         if (down && !up)
             vel.y = Config::Get().speed;
 
-        // normaliser diagonale
         if (vel.x != 0.f && vel.y != 0.f)
             vel /= std::sqrt(2.f);
 
         p->velocity = vel;
 
-        // --- Tir ---
         if (sf::Keyboard::isKeyPressed(Config::Get().keys.fire))
         {
             double now = Utils::localTimeNow();
-            // double fireInterval = 1.0 / client.localPlayer.fireRate;
             double fireInterval = 1.0 / p->fireRate;
 
             if (now - p->lastShootTime >= fireInterval)
@@ -177,7 +172,7 @@ void Game::handleEventPlayerMove(float dt)
                 p->lastShootTime = now;
             }
         }
-        // --- Rocket ---
+
         if (sf::Keyboard::isKeyPressed(Config::Get().keys.rocket))
         {
             double now = Utils::localTimeNow();

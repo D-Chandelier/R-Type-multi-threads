@@ -1,4 +1,5 @@
 ﻿#include "Server.hpp"
+#include "../../World/Entities.hpp"
 
 void Server::update(float dt)
 {
@@ -14,15 +15,13 @@ void Server::update(float dt)
     {
         positionAccumulator -= SERVER_TICK;
         levelTick++;
-        worldX += LEVEL_SCROLL_SPEED * SERVER_TICK;
+        worldX += LevelRegistry::current()->scrollSpeed * SERVER_TICK;
 
-        // updateSegment(dt);
-        updateSegment();
+        Segment::updateSegment(*this);
         updateEnemies(SERVER_TICK);
         Bullet::updateBulletsServer(*this, SERVER_TICK);
         Bonus::updateBonusesServer(*this, SERVER_TICK);
 
-        // Respawn / invulnérabilité
         const double now = Utils::currentGameTime(gameStartTime);
 
         for (auto &[id, p] : allPlayers)
@@ -36,51 +35,91 @@ void Server::update(float dt)
 
         packetBroadcastWorldX();
         packetBroadcastPositions();
-    }
-}
-// Génération de segments et spawn des turrets
-void Server::updateSegment()
-{
-    while (terrain.nextSegmentX < worldX + lookahead)
-    {
-        TerrainSegment seg = Segments::generateNextSegment(terrain);
-
-        // Créer les tourelles pour les blocs autorisés
-        for (auto &blk : seg.blocks)
-        {
-            if (blk.hasTurret)
-            {
-                uint32_t id = nextEnemyId++;
-
-                sf::Vector2f turretPos{
-                    seg.startX + blk.rect.position.x + TILE / 2.f,
-                    blk.rect.position.y - TURRET_HEIGHT / 2.f};
-                Enemy t(turretPos);
-
-                t.id = id;
-                t.type = EnemyType::TURRET;
-                allEnemies.emplace(id, t);
-                packetBroadcastEnemies();
-            }
-        }
-
-        // Envoyer le segment aux clients
-        for (const auto &[id, player] : allPlayers)
-        {
-            if (!player.peer)
-                continue;
-            packetSendSegment(seg, player.peer);
-        }
+        packetBroadcastEnemies();
     }
 }
 
 void Server::updateEnemies(float dt)
 {
+    for (auto &e : runtimeEnemies)
+    {
+        if (e.spawned)
+            continue;
+
+        if (worldX + Config::Get().windowSize.x >= e.desc.atX - 64.f)
+        {
+            const auto &arche = EnemyArchetypeRegistry::get(e.desc.archetype);
+
+            for (int i = 0; i < e.desc.count; i++)
+            {
+                Enemy enemy({e.desc.atX,
+                             Config::Get().windowSize.y - e.desc.y * LevelRegistry::current()->tileSize.y});
+
+                enemy.spawnType = e.desc.spawnType;
+
+                if (e.desc.y == -1)
+                {
+                    std::uniform_int_distribution<int> dist(2, 9);
+                    enemy.position.y = dist(terrain.rng) * LevelRegistry::current()->tileSize.y;
+                }
+
+                enemy.position.y -= arche.size.y;
+                enemy.velocity = e.desc.velocity;
+
+                switch (e.desc.spawnType)
+                {
+                case EnemySpawnType::Simple:
+                    break;
+                case EnemySpawnType::Wave:
+                    enemy.waveAmplitude = 50.f;
+                    enemy.waveFrequency = 2.f;
+                    enemy.baseY = enemy.position.y;
+                    break;
+                case EnemySpawnType::Circle:
+                    enemy.circleMove = true;
+                    enemy.circleCenter = enemy.position;
+                    enemy.circleRadius = 50.f;
+                    enemy.circleSpeed = 3.f;
+                    enemy.circleAngle = 0.f;
+                    break;
+                case EnemySpawnType::Group:
+                    enemy.position.y += i * e.desc.spacing;
+                    break;
+                case EnemySpawnType::Kamikaze:
+                {
+                    enemy.spawnType = EnemySpawnType::Kamikaze;
+                    enemy.kamikazeSpeed = std::sqrt(
+                        e.desc.velocity.x * e.desc.velocity.x +
+                        e.desc.velocity.y * e.desc.velocity.y);
+
+                    RemotePlayer *target = findClosestAlivePlayer(enemy.position);
+                    if (target)
+                        enemy.targetPlayerId = target->id;
+
+                                        break;
+                }
+                case EnemySpawnType::Boss:
+                    enemy.velocity.x = 0.f;
+                    break;
+                }
+
+                enemy.pv = arche.pv;
+                enemy.points = arche.points;
+                enemy.shootCooldown = (arche.fireRate > 0.f) ? 1.f / arche.fireRate : 0.f;
+                enemy.archetype = e.desc.archetype;
+                enemy.size = e.desc.size;
+
+                allEnemies.emplace(nextEnemyId++, enemy);
+            }
+            e.spawned = true;
+        }
+    }
+
     for (auto it = allEnemies.begin(); it != allEnemies.end();)
     {
         Enemy &enemy = it->second;
 
-        enemy.update(dt, worldX);
+        enemy.update(dt, *this);
 
         if (!enemy.active)
         {
@@ -90,7 +129,12 @@ void Server::updateEnemies(float dt)
 
         if (enemy.wantsToShoot)
         {
-            Bullet::spawnTurretBullet(enemy, *this);
+            const auto &arche = EnemyArchetypeRegistry::get(enemy.archetype);
+            if (arche.name == "turret")
+                Bullet::spawnTurretBullet(enemy, *this);
+            else
+                Bullet::spawnBullet(enemy, *this);
+
             enemy.wantsToShoot = false;
         }
         ++it;

@@ -9,6 +9,7 @@
 
 #include "../../Core/Config.hpp"
 #include "../../World/Terrain.hpp"
+#include "../../World/Entities.hpp"
 
 #include "../../Entities/RemotePlayers.hpp"
 #include "../../Entities/Enemies.hpp"
@@ -25,6 +26,11 @@ enum class ClientState
     DISCONNECTED,
     CONNECTING,
     CONNECTED
+};
+
+struct ClientEnemyVisual
+{
+    sf::Texture texture;
 };
 
 class Client
@@ -73,6 +79,7 @@ public:
     std::unordered_map<uint32_t, Bullet> allBullets;
     std::unordered_map<uint32_t, Bonus> allBonuses;
     std::vector<Explosion> explosions;
+    std::unordered_map<EnemyArchetypeId, ClientEnemyVisual> visuals;
 
     Terrain terrain;
     double serverTimeOffset;

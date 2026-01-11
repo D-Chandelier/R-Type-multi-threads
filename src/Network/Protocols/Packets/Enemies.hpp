@@ -7,9 +7,10 @@
 struct EnemyState
 {
     uint32_t id;
-    EnemyType type;
+    uint16_t archetype;
     float x, y;
     float velX, velY;
+    float sizeX, sizeY;
     int isActive;
 };
 

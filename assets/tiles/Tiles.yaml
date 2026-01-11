@@ -1,0 +1,7 @@
+﻿tiles:
+  default:
+    texture: "assets/tiles/stone_192x64.png"
+  metal:
+    texture: "assets/tiles/metal01_192x64.png"
+  metal02:
+    texture: "assets/tiles/metal02_441x64.png"

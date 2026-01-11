@@ -25,7 +25,6 @@ private:
 
     sf::FloatRect bounds;
 
-    // Rectangles dans la spritesheet selon l’état
     sf::IntRect normalRect;
     sf::IntRect hoverRect;
     sf::IntRect pressedRect;
@@ -68,13 +67,11 @@ public:
     {
         normalRect = normal;
 
-        // Si hover non renseigné, prendre normal
         if (hover == sf::IntRect())
             hoverRect = normal;
         else
             hoverRect = hover;
 
-        // Si pressed non renseigné, prendre hover (qui peut être normal)
         if (pressed == sf::IntRect())
             pressedRect = hoverRect;
         else
@@ -148,7 +145,6 @@ public:
             sprite.setTextureRect(normalRect);
             text.setFillColor(Config::Get().fontColor);
         }
-        // réappliquer le scale
         updateScale();
         centerText();
     }
@@ -183,7 +179,6 @@ private:
             break;
         }
 
-        // facteur de scale par rapport à la portion de texture
         float scaleX = size.x / static_cast<float>(rect.size.x);
         float scaleY = size.y / static_cast<float>(rect.size.y);
 

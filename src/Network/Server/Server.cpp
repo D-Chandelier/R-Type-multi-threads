@@ -12,9 +12,11 @@ bool Server::start(uint16_t port)
 {
     std::lock_guard<std::mutex> lock(mtx);
     if (host)
-        return true;
+        stop();
 
     allPlayers.clear();
+    allBullets.clear();
+    nextBulletId = 0;
 
     ENetAddress address;
     address.host = ENET_HOST_ANY;
@@ -32,15 +34,30 @@ bool Server::start(uint16_t port)
     levelTick = 0;
     worldX = 0.f;
 
-    terrain.init(levelSeed);
-    while (terrain.nextSegmentX < worldX + lookahead)
-        Segments::generateNextSegment(terrain);
+    ServerTileRegistry::loadFromFile("assets/tiles/Tiles.yaml");
+    EnemyArchetypeRegistry::loadFromFile("assets/entities/Entities.yaml");
+    LevelRegistry::loadFromFile("assets/levels/Stage.yaml");
+    LevelRegistry::setCurrent("level_01");
 
-    while (!terrain.segments.empty() &&
-           terrain.segments.front().startX + SEGMENT_WIDTH < worldX - cleanupMargin)
+    const auto *levelDesc = LevelRegistry::current();
+    if (!levelDesc)
     {
-        terrain.segments.pop_front();
+        std::cerr << "No current level set!\n";
+        return false;
     }
+
+    runtimeEnemies.clear();
+
+    for (const auto &e : levelDesc->enemies)
+    {
+        runtimeEnemies.push_back(EnemyRuntime{e, false});
+    }
+
+    runtimeLevel.desc = LevelRegistry::current();
+    runtimeLevel.nextSegmentIndex = 0;
+    runtimeLevel.nextEnemyIndex = 0;
+
+    terrain.rng.seed(LevelRegistry::current()->seed);
 
     return true;
 }
@@ -54,4 +71,12 @@ void Server::stop()
         enet_host_destroy(host);
         host = nullptr;
     }
+    allPlayers.clear();
+    allBullets.clear();
+    runtimeEnemies.clear();
+
+    nextBulletId = 0;
+    nextEnemyId = 0;
+
+    serverReady = false;
 }

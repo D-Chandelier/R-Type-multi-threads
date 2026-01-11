@@ -13,7 +13,6 @@ MenuMain::MenuMain()
     sf::IntRect normal = {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}};
     sf::IntRect hover = {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}};
 
-    // Bouton PLAY
     play.setTexture("./assets/bt.png");
     play.setColor(sf::Color(128, 255, 128, 0));
     play.setSpritesheetRects(normal, hover);
@@ -24,7 +23,6 @@ MenuMain::MenuMain()
     play.onClickCallback([this]()
                          { this->action = MenuAction::START_GAME; });
 
-    // Bouton JOIN SERVER
     join.setTexture("./assets/bt.png");
     join.setColor(sf::Color(128, 255, 128, 0));
     join.setSpritesheetRects(normal, hover);
@@ -35,7 +33,6 @@ MenuMain::MenuMain()
     join.onClickCallback([this]()
                          { this->action = MenuAction::GO_TO_SERVER_LIST; });
 
-    // Bouton JOIN SERVER
     option.setTexture("./assets/bt.png");
     option.setColor(sf::Color(128, 255, 128, 0));
     option.setSpritesheetRects(normal, hover);
@@ -46,7 +43,6 @@ MenuMain::MenuMain()
     option.onClickCallback([this]()
                            { this->action = MenuAction::GO_TO_OPTION_MENU; });
 
-    // Bouton QUIT
     quit.setTexture("./assets/bt.png");
     quit.setColor(sf::Color(255, 64, 64, 64));
     quit.setSpritesheetRects(normal, hover);
@@ -67,7 +63,7 @@ void MenuMain::reset()
 
 void MenuMain::update(float dt, sf::RenderWindow &w)
 {
-    // --- Hover ---
+
     sf::Vector2f mp = w.mapPixelToCoords(sf::Mouse::getPosition(w));
     play.update(w);
     join.update(w);

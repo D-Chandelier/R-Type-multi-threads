@@ -1,4 +1,5 @@
 ﻿#include "Client.hpp"
+#include "../../World/Entities.hpp"
 
 Client::Client()
     : clientHost(nullptr),
@@ -11,8 +12,12 @@ Client::~Client() { stop(); }
 bool Client::init()
 {
     if (clientHost)
-        return true; // déjà créé
+        return true;
     clientHost = enet_host_create(nullptr, 1, 2, 0, 0);
+    allBullets.clear();
+    allBonuses.clear();
+    allEnemies.clear();
+    allEnemiesTmp.clear();
     return clientHost != nullptr;
 }
 
@@ -31,6 +36,18 @@ bool Client::start(const char *host, uint16_t port)
 
     ConnexionState = ClientState::CONNECTING;
     std::cout << "[Client] connecting to " << host << ":" << port << "\n";
+    ClientTileRegistry::loadFromFile("assets/tiles/Tiles.yaml");
+
+    for (auto &[id, arche] : EnemyArchetypeRegistry::archetypes)
+    {
+        ClientEnemyVisual v;
+        if (!v.texture.loadFromFile(arche.texture))
+        {
+            std::cerr << "Failed to load texture: " << arche.texture << std::endl;
+        }
+        visuals[id] = std::move(v);
+    }
+
     return true;
 }
 
@@ -56,7 +73,6 @@ void Client::update(float dt)
     handleEnetService();
     {
         std::lock_guard<std::mutex> lock(mtx);
-        // applyNetworkState(); // copie netPlayers → players
-    }
+        }
     packetSendPosition();
 }

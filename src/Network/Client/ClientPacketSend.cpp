@@ -2,14 +2,12 @@
 
 void Client::packetSendPosition()
 {
-    // envoyer la position au serveur
     if (Config::Get().playerId < 0 || Config::Get().playerId > MAX_PLAYER)
         return;
 
     if (peer)
     {
 
-        // Clamp pour ne pas sortir de l'écran
         float halfW = Config::Get().playerArea.getCenter().x * Config::Get().playerScale.x;
         float halfH = Config::Get().playerArea.getCenter().y * Config::Get().playerScale.y;
 
@@ -30,7 +28,6 @@ void Client::packetSendPosition()
 
 void Client::packetSendBullets(BulletType bType)
 {
-    // envoyer la position au serveur
     if (Config::Get().playerId < 0 || Config::Get().playerId > MAX_PLAYER)
         return;
 
@@ -46,7 +43,7 @@ void Client::packetSendBullets(BulletType bType)
         p.velY = 0.f;
         p.bulletType = bType;
 
-        ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE); // Un tir ne doit jamais être perdu.
+        ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE);
         enet_peer_send(peer, 0, packet);
     }
 }
@@ -63,7 +60,7 @@ void Client::packedSendRejoin()
         p.header.code = static_cast<uint8_t>(ClientMsg::REJOIN);
         p.id = Config::Get().playerId;
 
-        ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE); // Un tir ne doit jamais être perdu.
+        ENetPacket *packet = enet_packet_create(&p, sizeof(p), ENET_PACKET_FLAG_RELIABLE);
         enet_peer_send(peer, 0, packet);
     }
 }

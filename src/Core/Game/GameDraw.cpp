@@ -30,10 +30,15 @@ void Game::drawGameplay()
 
 void Game::drawEnemies()
 {
-    for (auto &[id, enemy] : client.allEnemies)
+    std::vector<Enemy> enemyCopy;
     {
-        enemy.draw(client, window);
+        std::lock_guard<std::mutex> lock(client.enemiesMutex);
+        for (auto &[id, e] : client.allEnemies)
+            enemyCopy.push_back(e);
     }
+
+    for (auto &e : enemyCopy)
+        e.draw(client, window);
 }
 
 void Game::drawPlayersHUD()
@@ -54,13 +59,11 @@ void Game::drawPlayersHUD()
         const sf::Color playerColor = PlayerColors[player.id];
         float baseX = index * sectionWidth;
 
-        // Fond semi-transparent
         sf::RectangleShape background({sectionWidth, hudHeight});
         background.setPosition({baseX, 0.f});
         background.setFillColor(sf::Color(0, 0, 0, 120));
         window.draw(background);
 
-        // Texte joueur : nom + score
         sf::Text text(Config::Get().font);
         text.setCharacterSize(16);
         text.setFillColor(playerColor);
@@ -69,15 +72,13 @@ void Game::drawPlayersHUD()
         text.setPosition({baseX + margin, 0.f});
         window.draw(text);
 
-        // Sprite fusée pour représenter les rockets
         sf::Sprite rocket(Config::Get().rocketTexture);
-        rocket.scale({.75f, .75f}); // ou ajuster si nécessaire
+        rocket.scale({.75f, .75f});
         rocket.setRotation(sf::degrees(-45.f));
-        rocket.setPosition({50 + baseX + margin + text.getGlobalBounds().size.x, margin + rocket.getGlobalBounds().size.y}); // juste en dessous du nom
+        rocket.setPosition({50 + baseX + margin + text.getGlobalBounds().size.x, margin + rocket.getGlobalBounds().size.y});
 
         window.draw(rocket);
 
-        // Texte "xN" à côté du rocket
         sf::Text rocketCountText(Config::Get().font);
         rocketCountText.setCharacterSize(16);
         rocketCountText.setFillColor(playerColor);
@@ -86,7 +87,6 @@ void Game::drawPlayersHUD()
                                      rocket.getPosition().y - rocketCountText.getGlobalBounds().size.y});
         window.draw(rocketCountText);
 
-        // Barre de PV
         const float maxPV = player.maxPv;
         float pvRatio = std::max(0.f, player.pv) / maxPV;
 
@@ -107,7 +107,7 @@ void Game::drawPlayersHUD()
 void Game::drawBackground()
 {
     sf::RenderStates states_1, states_2;
-    states_1.texture = &Config::Get().bckgTextureBack; // bckgTextureBack;
+    states_1.texture = &Config::Get().bckgTextureBack;
     states_2.texture = &Config::Get().bckgTextureFront;
 
     window.draw(backgroundVA_1, states_1);
@@ -116,22 +116,22 @@ void Game::drawBackground()
 
 void Game::drawTerrain()
 {
-    sf::Sprite sprite(Config::Get().blockTexture);
-
     for (const auto &seg : client.terrain.segments)
     {
-        for (const auto &b : seg.blocks)
+        if (seg.startX - client.targetWorldX > window.getSize().x ||
+            seg.blocks.size() * seg.blocks[0].rect.size.x + seg.startX < 0)
+            continue;
+        for (const auto &blk : seg.blocks)
         {
-            float screenX = b.rect.position.x + seg.startX - client.terrain.worldX;
-
-            if (screenX + b.rect.size.x < 0 ||
-                screenX > Config::Get().windowSize.x)
+            if (seg.startX + blk.rect.position.x + blk.rect.size.x - client.targetWorldX < 0)
                 continue;
+            const sf::Texture &tex = ClientTileRegistry::getTexture(blk.tileId);
 
-            sprite.setPosition({screenX, b.rect.position.y});
-            sprite.setTextureRect(client.terrain.getTextureRect(b.visual));
+            sf::Sprite spr(tex);
+            spr.setTextureRect(ClientTileRegistry::getTextureRect(blk.visual, tex));
+            spr.setPosition({seg.startX + blk.rect.position.x - client.targetWorldX, blk.rect.position.y});
 
-            window.draw(sprite);
+            window.draw(spr);
         }
     }
 }

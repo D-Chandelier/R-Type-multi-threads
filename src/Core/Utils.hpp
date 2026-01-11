@@ -25,7 +25,7 @@ namespace Utils
 
     inline std::string keyToString(sf::Keyboard::Scancode k)
     {
-        return sf::Keyboard::getDescription(k).toAnsiString(); // SFML >= 2.6
+        return sf::Keyboard::getDescription(k).toAnsiString();
     }
 
     inline RemotePlayer *getLocalPlayer(std::map<uint32_t, RemotePlayer> &p)
@@ -53,6 +53,6 @@ namespace Utils
             if (allPlayers.find(id) == allPlayers.end())
                 return id;
         }
-        return 100; // aucun slot libre
+        return 100;
     }
 }

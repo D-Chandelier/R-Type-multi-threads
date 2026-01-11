@@ -1,0 +1,241 @@
+﻿id: "level_01"
+scrollSpeed: 180.0
+seed: 133742
+segment_width: 1323
+tile_width: 147
+tile_height: 64
+
+segments:
+
+  # =========================
+  # INTRO – SOL SIMPLE
+  # =========================
+  - atX: 0
+    tag: "intro_ground"
+    modules:
+      - type: full
+        level: 0
+        height: 1
+        tile: metal02
+
+  - atX: 1323
+    tag: "intro_ground_2"
+    modules:
+      - type: full
+        level: 0
+        height: 2
+        tile: metal02
+
+  # =========================
+  # PREMIERS TROUS
+  # =========================
+  - atX: 2646
+    tag: "first_hole"
+    modules:
+      - type: "hole"
+        level: 0
+        height: 1
+        tile: metal02
+
+  - atX: 3969
+    tag: "recovery_platform"
+    modules:
+      - type: "full"
+        level: 0
+        height: 1
+        tile: metal02
+
+      - type: "middle"
+        level: 3
+        height: 1
+        tile: metal02
+
+  # =========================
+  # SOL + PLAFOND
+  # =========================
+  - atX: 5292
+    tag: "ground_and_ceiling"
+    modules:
+      - type: "full"
+        level: 0
+        height: 1
+        tile: metal02
+        
+      - type: "full"
+        level: 11
+        height: 1
+        tile: metal02
+
+  # =========================
+  # COULOIR ÉTROIT
+  # =========================
+  - atX: 6615
+    tag: "narrow_corridor"
+    modules:
+      - type: "left"
+        level: 0
+        height: 1
+        tile: metal02
+      - type: "right"
+        level: 0
+        height: 1
+        tile: metal02
+      - type: "middle"
+        level: 8
+        height: 1
+        tile: metal02
+
+  # =========================
+  # CHAÎNE DE PLATEFORMES
+  # =========================
+  - atX: 7938
+    tag: "platform_chain_1"
+    modules:
+      - type: "left"
+        level: 3
+        height: 1
+        tile: metal02
+
+  - atX: 9261
+    tag: "platform_chain_2"
+    modules:
+      - type: "middle"
+        level: 4
+        height: 1
+        tile: metal02
+
+  - atX: 10584
+    tag: "platform_chain_3"
+    modules:
+      - type: "right"
+        level: 5
+        height: 1
+        tile: metal02
+
+  # =========================
+  # ZONE DANGEREUSE
+  # =========================
+  - atX: 11907
+    tag: "danger_zone"
+    modules:
+      - type: "hole"
+        level: 0
+        height: 1
+        tile: metal02
+      - type: "left"
+        level: 7
+        height: 1
+        tile: metal02
+      - type: "right"
+        level: 7
+        height: 1
+        tile: metal02
+
+  # =========================
+  # RESPIRATION
+  # =========================
+  - atX: 13230
+    tag: "rest"
+    modules:
+      - type: "full"
+        level: 0
+        height: 1
+        tile: metal02
+
+  # =========================
+  # FINAL – DOUBLE ÉTAGE
+  # =========================
+  - atX: 14553
+    tag: "finale"
+    modules:
+      - type: "full"
+        level: 0
+        height: 1
+        tile: metal02
+
+      - type: "hole"
+        level: 4
+        height: 1
+        tile: metal02
+
+      - type: "full"
+        level: 11
+        height: 1
+        tile: metal02
+
+enemies:
+  - atX: 1396
+    y: 2
+    archetype: turret
+  - atX: 1543
+    y: 2
+    archetype: turret
+  - atX: 1690
+    y: 2
+    archetype: turret
+  - atX: 1837
+    y: 2
+    archetype: turret
+  - atX: 1984
+    y: 2
+    archetype: turret
+
+  - atX: 4012
+    y: 1
+    archetype: turret
+  - atX: 4159
+    y: 1
+    archetype: turret
+  - atX: 4306
+    y: 1
+    archetype: turret
+  - atX: 4453
+    y: 1
+    archetype: turret
+  - atX: 4600
+    y: 1
+    archetype: turret
+  
+  - atX: 2000
+    archetype: "drone"
+    spawnType: "kamikaze"
+    y: 5
+
+  - atX: 4000
+    y: 9
+    archetype: "kamikaze"
+    spawnType: "group"
+    velocity:
+     x: 90
+    count: 5
+    spacing: 96
+
+  - atX: 5500
+    y: 8
+    velocity:
+      x: 90
+    archetype: "drone"
+    spawnType: "circle"
+  - atX: 5500
+    y: 4
+    velocity:
+      x: 90
+    archetype: "drone"
+    spawnType: "circle"
+  
+  - atX: 7000
+    y: 2
+    archetype: "kamikaze"
+    spawnType: "wave"
+  - atX: 7000
+    y: 4
+    archetype: "kamikaze"
+    spawnType: "wave"
+  - atX: 7000
+    y: 6
+    archetype: "kamikaze"
+    spawnType: "wave"
+  - atX: 7000
+    y: 8
+    archetype: "kamikaze"
+    spawnType: "wave"

@@ -75,6 +75,26 @@ if(MSVC AND ENet_ADDED)
 endif()
 
 # ─────────────────────────────────────────────
+# yaml-cpp
+# ─────────────────────────────────────────────
+
+CPMAddPackage(
+    NAME yaml-cpp
+    GITHUB_REPOSITORY jbeder/yaml-cpp
+    GIT_TAG 0.8.0
+    OPTIONS
+        "YAML_CPP_BUILD_TESTS OFF"
+        "YAML_CPP_BUILD_TOOLS OFF"
+        "YAML_CPP_INSTALL OFF"
+)
+if(MSVC AND yaml-cpp_ADDED)
+    target_compile_options(yaml-cpp PRIVATE
+        /wd4251  # dll-interface
+        /wd4275
+    )
+endif()
+
+# ─────────────────────────────────────────────
 # Exécutable
 # ─────────────────────────────────────────────
 file(GLOB_RECURSE SOURCES "src/*.cpp")
@@ -89,6 +109,7 @@ target_link_libraries(RType
         sfml-audio
         sfml-system
         enet
+        yaml-cpp
 )
 target_include_directories(RType PRIVATE ${ENET_INCLUDE_DIR}/Include)
 target_include_directories(RType PRIVATE ${ENet_SOURCE_DIR}/include)
@@ -108,3 +129,4 @@ set(BUILD_ASSETS_DIR $<TARGET_FILE_DIR:RType>/assets)
 add_custom_command(TARGET RType POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${ASSETS_DIR} ${BUILD_ASSETS_DIR})
+

@@ -28,7 +28,7 @@ constexpr float ROCKET_WIDTH = 32.f;
 constexpr float ROCKET_START_SPEED = 120.f;
 constexpr float ROCKET_MAX_SPEED = 700.f;
 constexpr float ROCKET_ACCELERATION = 900.f;
-constexpr float ROCKET_TURN_RATE = 4.5f; // radians/sec
+constexpr float ROCKET_TURN_RATE = 4.5f;
 constexpr float ROCKET_LAUNCH_TIME = 0.3f;
 constexpr float ROCKET_RANGE = 900.f;
 
@@ -42,7 +42,6 @@ struct Bullet
     BulletOwner owner = BulletOwner::PLAYER;
     bool active = true;
 
-    // Missile only
     BulletType type = BulletType::LINEAR;
     float lifetime = 0.f;
     uint32_t targetId = 0;
@@ -53,18 +52,18 @@ struct Bullet
         static Bullet instance;
         return instance;
     }
-    // Coté CLIENT
+
     static void updateBulletsClient(Client &client, float dt);
     static void buildBulletQuad(const Bullet &b, float angle, sf::VertexArray &bulletsVA);
     static void buildRocketQuad(const Bullet &b, float angle, sf::VertexArray &rocketsVA);
 
     static void drawBullets(sf::RenderWindow &w);
 
-    // Coté SERVER
     static void updateBulletsServer(Server &server, float dt);
     static void updateRocketServer(Server &server, Bullet &m, float dt);
     static void spawnTurretBullet(Enemy &t, Server &s);
-    ////////////////
+    static void spawnBullet(Enemy &t, Server &s);
+
     inline static float radToDeg(float r)
     {
         return r * 180.f / 3.14159265f;

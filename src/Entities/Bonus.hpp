@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "../Core/Config.hpp"
 #include "RemotePlayers.hpp"
-// #include "../Network/Server/Server.hpp"
 #include <SFML/Graphics.hpp>
 
 class Client;
@@ -12,9 +11,9 @@ static constexpr int BONUS_TYPE_COUNT = 5;
 constexpr float BONUS_HEIGHT = 48.f;
 constexpr float BONUS_WIDTH = 48.f;
 constexpr float BONUS_SPEED = 50.f;
-constexpr float BONUS_SCROLL_SPEED = -60.f; // vers la gauche
-constexpr float BONUS_ORBIT_SPEED = 0.6f;   // radians / seconde
-constexpr float BONUS_SPIN_SPEED = 90.f;    // degrés / seconde
+constexpr float BONUS_SCROLL_SPEED = -60.f;
+constexpr float BONUS_ORBIT_SPEED = 0.6f;
+constexpr float BONUS_SPIN_SPEED = 90.f;
 
 constexpr sf::Color BONUS_COLOR = sf::Color::Cyan;
 
@@ -32,15 +31,15 @@ struct Bonus
     uint32_t id;
     BonusType type;
 
-    sf::Vector2f spawnPos = {0.f, 0.f}; // point d’origine
-    sf::Vector2f velocity = {0.F, 0.f}; // vitesse horizontale
+    sf::Vector2f spawnPos = {0.f, 0.f};
+    sf::Vector2f velocity = {0.F, 0.f};
 
-    float time = 0.f;         // temps depuis le spawn
-    float amplitude = 0.f;    // hauteur du cercle (ex: 300px)
-    float angularSpeed = 0.f; // rad/sec
-    float phase = 0.f;        // déphasage
+    float time = 0.f;
+    float amplitude = 0.f;
+    float angularSpeed = 0.f;
+    float phase = 0.f;
 
-    sf::Vector2f position = {0.f, 0.f}; // position calculée (résultat)
+    sf::Vector2f position = {0.f, 0.f};
 
     bool active = true;
 

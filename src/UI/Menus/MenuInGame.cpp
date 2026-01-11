@@ -11,17 +11,15 @@ MenuInGame::MenuInGame()
     sousTitle.setCharacterSize(40);
     sousTitle.setPosition({cx - sousTitle.getLocalBounds().getCenter().x, cy * 3 - sousTitle.getLocalBounds().getCenter().y});
 
-    // Bouton RESUME
     resume.setTexture("./assets/bt.png");
     resume.setColor(sf::Color(128, 128, 255, 64));
-    // Taille d'une cellule
+
     int cellWidth = resume.getTexture().getSize().x / 2;
     int cellHeight = resume.getTexture().getSize().y / 7;
 
     resume.setSpritesheetRects(
-        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
-        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
-    );
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}},
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}});
 
     resume.setFont(Config::Get().font);
     resume.setText("REPRENDRE", 28);
@@ -30,13 +28,11 @@ MenuInGame::MenuInGame()
     resume.onClickCallback([this]()
                            { this->action = MenuAction::RETURN_IN_GAME; });
 
-    // Bouton QUIT
     quit.setTexture("./assets/bt.png");
     quit.setColor(sf::Color(255, 64, 64, 64));
     quit.setSpritesheetRects(
-        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
-        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
-    );
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}},
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}});
 
     quit.setFont(Config::Get().font);
     quit.setText("MENU PRINCIPAL", 28);

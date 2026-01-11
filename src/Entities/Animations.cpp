@@ -39,7 +39,6 @@ void Explosion::spawnExplosion(Client &client, sf::Vector2f pos)
 
 void Explosion::draw(Client &client, sf::RenderWindow &w)
 {
-    // std::cout << "[EXPLOSION] draw count=" << client.explosions.size() << "\n";
     for (auto &e : client.explosions)
     {
         e.sprite.setPosition({e.position.x - client.targetWorldX,

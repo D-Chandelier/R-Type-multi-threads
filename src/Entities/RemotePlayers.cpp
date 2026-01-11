@@ -16,5 +16,5 @@ void RemotePlayer::killAndRespawn(RemotePlayer &p, Server &s)
     p.velocity = {0.f, 0.f};
 
     const double now = Utils::currentGameTime(s.gameStartTime);
-    p.respawnTime = now + 3.0; // timestamp absolu
+    p.respawnTime = now + 3.0;
 }

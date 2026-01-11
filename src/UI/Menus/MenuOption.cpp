@@ -18,14 +18,12 @@ MenuOption::MenuOption()
     float cx = Config::Get().windowSize.x / 2.f;
     float cy = Config::Get().windowSize.y / 10.f;
 
-    // Titre
     title.setString("Options");
     title.setCharacterSize(48);
     title.setFillColor(Config::Get().fontColor);
     title.setOrigin(title.getLocalBounds().getCenter());
     title.setPosition({cx, cy * 2});
 
-    // TextBox Port
     tbPort.setText(std::to_string(Config::Get().serverPort));
     tbPort.setLabel("Port du jeu :");
     tbPort.setLabelSpacing(300.f);
@@ -34,7 +32,6 @@ MenuOption::MenuOption()
     tbPort.setType(UITextBoxType::PORT);
     tbPort.setPosition({cx - tbPort.getSize().x / 2, cy * 3 - tbPort.getSize().y / 2});
 
-    // TextBox keyUp
     tbKeyUp.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.up)));
     tbKeyUp.setLabel("Touche UP: ");
     tbKeyUp.setLabelSpacing(300.f);
@@ -43,7 +40,6 @@ MenuOption::MenuOption()
     tbKeyUp.setType(UITextBoxType::KEY);
     tbKeyUp.setPosition({cx - tbKeyUp.getSize().x / 2, cy * 5 - tbKeyUp.getSize().y / 2});
 
-    // TextBox KeyDown
     tbKeyDown.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.down)));
     tbKeyDown.setLabel("Touche DOWN: ");
     tbKeyDown.setLabelSpacing(300.f);
@@ -52,7 +48,6 @@ MenuOption::MenuOption()
     tbKeyDown.setType(UITextBoxType::KEY);
     tbKeyDown.setPosition({cx - tbKeyDown.getSize().x / 2, cy * 5.5f - tbKeyDown.getSize().y / 2});
 
-    // TextBox keyLeft
     tbKeyLeft.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.left)));
     tbKeyLeft.setLabel("Touche LEFT: ");
     tbKeyLeft.setLabelSpacing(300.f);
@@ -61,7 +56,6 @@ MenuOption::MenuOption()
     tbKeyLeft.setType(UITextBoxType::KEY);
     tbKeyLeft.setPosition({cx - tbKeyLeft.getSize().x / 2, cy * 6 - tbKeyLeft.getSize().y / 2});
 
-    // TextBox keyRight
     tbKeyRight.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.right)));
     tbKeyRight.setLabel("Touche RIGHT: ");
     tbKeyRight.setLabelSpacing(300.f);
@@ -70,7 +64,6 @@ MenuOption::MenuOption()
     tbKeyRight.setType(UITextBoxType::KEY);
     tbKeyRight.setPosition({cx - tbKeyRight.getSize().x / 2, cy * 6.5f - tbKeyRight.getSize().y / 2});
 
-    // TextBox keyFire
     tbKeyFire.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.fire)));
     tbKeyFire.setLabel("Touche FIRE: ");
     tbKeyFire.setLabelSpacing(300.f);
@@ -79,7 +72,6 @@ MenuOption::MenuOption()
     tbKeyFire.setType(UITextBoxType::KEY);
     tbKeyFire.setPosition({cx - tbKeyFire.getSize().x / 2, cy * 7 - tbKeyFire.getSize().y / 2});
 
-    // TextBox keyRocket
     tbKeyRocket.setText(Utils::keyToString(sf::Keyboard::delocalize(Config::Get().keys.rocket)));
     tbKeyRocket.setLabel("Touche ROCKET: ");
     tbKeyRocket.setLabelSpacing(300.f);
@@ -88,13 +80,11 @@ MenuOption::MenuOption()
     tbKeyRocket.setType(UITextBoxType::KEY);
     tbKeyRocket.setPosition({cx - tbKeyRocket.getSize().x / 2, cy * 7.5f - tbKeyRocket.getSize().y / 2});
 
-    // Description Port
     portDesc.setCharacterSize(18);
     portDesc.setFillColor(Config::Get().fontColor);
     portDesc.setOrigin(portDesc.getLocalBounds().getCenter());
     portDesc.setPosition({cx, cy * 3 + tbPort.getSize().y});
 
-    // Bouton Sauvegarder
     if (!saveTexture.loadFromFile("./assets/save.png"))
     {
         throw std::runtime_error("Impossible de charger save.png");
@@ -104,7 +94,6 @@ MenuOption::MenuOption()
     saveIcon.setOrigin(saveIcon.getLocalBounds().getCenter());
     saveIcon.setPosition({cx + 200, cy * 9});
 
-    // Coche
     if (!cocheTexture.loadFromFile("./assets/valider.png"))
     {
         throw std::runtime_error("Impossible de charger valider.png");
@@ -114,17 +103,15 @@ MenuOption::MenuOption()
     cocheIcon.setOrigin(cocheIcon.getLocalBounds().getCenter());
     cocheIcon.setPosition({cx + 250, cy * 9});
 
-    // Bouton QUIT
     quit.setTexture("./assets/bt.png");
     quit.setColor(sf::Color(255, 64, 64, 64));
-    // Taille d'une cellule
+
     int cellWidth = quit.getTexture().getSize().x / 2;
     int cellHeight = quit.getTexture().getSize().y / 7;
 
     quit.setSpritesheetRects(
-        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}, // normal
-        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}}  // hover
-    );
+        {{0 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}},
+        {{1 * cellWidth, 0 * cellHeight}, {cellWidth, cellHeight}});
 
     quit.setFont(Config::Get().font);
     quit.setText("RETOUR", 40, Config::Get().fontColor);
@@ -179,11 +166,10 @@ void MenuOption::update(float dt, sf::RenderWindow &w)
 
     portDesc.setOrigin(portDesc.getLocalBounds().getCenter());
 
-    // Affiche la coche verte
     if (showCocheIcon)
     {
         saveCheckTimer += dt;
-        if (saveCheckTimer >= 3.f) // après 3 secondes
+        if (saveCheckTimer >= 3.f)
         {
             showCocheIcon = false;
             saveCheckTimer = 0.f;
@@ -197,7 +183,6 @@ void MenuOption::handleEvent(const sf::Event &e, sf::RenderWindow &w)
     {
         sf::Vector2f mp(w.mapPixelToCoords(sf::Mouse::getPosition(w)));
 
-        // Focus champ port au clic
         tbPort.checkFocus(mp);
         tbKeyUp.checkFocus(mp);
         tbKeyDown.checkFocus(mp);
@@ -218,7 +203,6 @@ void MenuOption::handleEvent(const sf::Event &e, sf::RenderWindow &w)
                 Config::Get().keys.fire = sf::Keyboard::localize(tbKeyFire.scancodeKey);
                 Config::Get().keys.rocket = sf::Keyboard::localize(tbKeyRocket.scancodeKey);
 
-                // afficher la coche
                 showCocheIcon = true;
                 saveCheckTimer = 0.f;
             }

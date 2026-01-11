@@ -43,7 +43,7 @@ struct ServerPositionPacket
     uint8_t playerCount;
     PlayerState players[static_cast<long>(MAX_PLAYER)];
 
-    double serverGameTime; // temps serveur actuel
+    double serverGameTime;
     float scrollSpeed;
 };
 

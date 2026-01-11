@@ -9,7 +9,6 @@ void Bullet::update(float dt)
 
     position += velocity * dt;
 
-    // Exemple destruction hors écran
     if (position.x < -50 || position.x > Config::Get().windowSize.x + 50 ||
         position.y < -50 || position.y > Config::Get().windowSize.y + 50)
     {
@@ -74,8 +73,6 @@ void Bullet::buildBulletQuad(const Bullet &b, float angle, sf::VertexArray &bVA)
     bVA.append({world[0], color});
     bVA.append({world[2], color});
     bVA.append({world[3], color});
-
-    // std::cout << "VA bullets vertices: " << bVA.getVertexCount() << "\n";
 }
 
 void Bullet::buildRocketQuad(const Bullet &b, float angle, sf::VertexArray &rVA)
@@ -131,8 +128,6 @@ void Bullet::drawBullets(sf::RenderWindow &w)
 
 void Bullet::updateBulletsServer(Server &server, float dt)
 {
-    bool anyEnemiesDestroyed = false;
-
     for (auto it = server.allBullets.begin(); it != server.allBullets.end();)
     {
         bool destroyed = false;
@@ -149,9 +144,14 @@ void Bullet::updateBulletsServer(Server &server, float dt)
             if (!e.active || b.owner == BulletOwner::ENEMY)
                 continue;
 
-            sf::Vector2f d = sf::Vector2f{b.position.x + server.worldX, b.position.y} - e.position;
-            constexpr float radius = TURRET_HEIGHT / 2.f; // Ajuster selon le sprite
-            if (d.x * d.x + d.y * d.y <= radius * radius)
+            sf::FloatRect eBounds = {
+                {e.position.x, e.position.y},
+                {e.size.x, e.size.y}};
+            sf::FloatRect bBounds = {
+                {b.position.x + server.worldX, b.position.y},
+                {BULLET_WIDTH, BULLET_HEIGHT}};
+
+            if (eBounds.findIntersection(bBounds))
             {
                 b.active = false;
                 destroyed = true;
@@ -165,9 +165,7 @@ void Bullet::updateBulletsServer(Server &server, float dt)
                     server.packetBroadcastEnemyDestroyed(id, e.position);
                     server.allPlayers[b.ownerId].score += e.points;
                     e.active = false;
-                    anyEnemiesDestroyed = true;
-                    // server.packetBroadcastEnemyDestroyed(e.id, e.position);
-                    server.onEnemyDestroyed(EnemyType::TURRET, e.position, server.allPlayers[b.ownerId]);
+                    server.onEnemyDestroyed(e, e.position, server.allPlayers[b.ownerId]);
                 }
                 break;
             }
@@ -201,12 +199,6 @@ void Bullet::updateBulletsServer(Server &server, float dt)
         else
             ++it;
     }
-
-    // if (anyEnemiesDestroyed)
-    // {
-
-    //     server.packetBroadcastEnemies();
-    // }
 }
 
 void Bullet::updateRocketServer(Server &server, Bullet &m, float dt)
@@ -215,14 +207,12 @@ void Bullet::updateRocketServer(Server &server, Bullet &m, float dt)
 
     bool needBroadcast = true;
 
-    // Phase 1 : lancement
     if (m.lifetime < ROCKET_LAUNCH_TIME)
     {
         server.packetBroadcastRocket(m);
         return;
     }
 
-    // Acquisition cible (une seule fois)
     if (m.targetId == 0)
         m.targetId = server.findClosestTarget(m.position);
 
@@ -231,7 +221,6 @@ void Bullet::updateRocketServer(Server &server, Bullet &m, float dt)
 
     sf::Vector2f dir = m.velocity / speed;
 
-    // Si pas de cible valide → ligne droite accélérée
     auto it = server.allEnemies.find(m.targetId);
     if (m.targetId == 0 || it == server.allEnemies.end() || !it->second.active)
     {
@@ -241,19 +230,15 @@ void Bullet::updateRocketServer(Server &server, Bullet &m, float dt)
         return;
     }
 
-    // Direction vers la cible
-    // Position missile en monde
     sf::Vector2f missileWorldPos{
         m.position.x + server.worldX,
         m.position.y};
 
-    // Direction vers la cible (monde → monde)
     sf::Vector2f toTarget = it->second.position - missileWorldPos;
     float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y);
     if (len > 0.f)
         toTarget /= len;
 
-    // Rotation limitée
     float dot = dir.x * toTarget.x + dir.y * toTarget.y;
     dot = std::clamp(dot, -1.f, 1.f);
 
@@ -279,7 +264,24 @@ void Bullet::spawnTurretBullet(Enemy &t, Server &s)
     b.id = s.nextBulletId++;
     b.position = t.position;
     b.position.x -= s.worldX;
-    b.velocity = {-LEVEL_SCROLL_SPEED - 200.f, -200.f}; // exemple
+    b.velocity = {-LevelRegistry::current()->scrollSpeed - 200.f, -200.f};
+    b.active = true;
+    b.owner = BulletOwner::ENEMY;
+    b.ownerId = t.id;
+
+    s.allBullets.emplace(b.id, b);
+
+    s.packetBroadcastBulletSpawn(b);
+}
+
+void Bullet::spawnBullet(Enemy &t, Server &s)
+{
+    Bullet b;
+    b.id = s.nextBulletId++;
+    b.position = t.position;
+    b.position.x -= s.worldX;
+    b.position.y += t.size.x / 2;
+    b.velocity = {-LevelRegistry::current()->scrollSpeed - b.velocity.x - 200.f, 0.f};
     b.active = true;
     b.owner = BulletOwner::ENEMY;
     b.ownerId = t.id;

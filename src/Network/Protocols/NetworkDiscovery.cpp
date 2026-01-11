@@ -1,6 +1,5 @@
 ﻿#include "NetworkDiscovery.hpp"
 
-// Côté serveur : broadcast continu
 void NetworkDiscovery::startBroadcast(uint16_t gamePort, uint16_t discoveryPort)
 {
     stopBroadcast();
@@ -29,7 +28,6 @@ void NetworkDiscovery::stopBroadcast()
         broadcastThread.join();
 }
 
-// Côté client : écoute continue
 void NetworkDiscovery::startListening(uint16_t discoveryPort)
 {
     stopListening();

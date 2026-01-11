@@ -12,6 +12,7 @@
 #include "../../Network/Server/Server.hpp"
 #include "../../Network/Protocols/NetworkDiscovery.hpp"
 #include "../../World/Terrain.hpp"
+#include "../../World/Tile.hpp"
 
 #include "../../Entities/Bullet.hpp"
 

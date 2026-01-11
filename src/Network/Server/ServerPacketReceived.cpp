@@ -14,7 +14,6 @@ void Server::packetReceivedPlayerPosition(ENetEvent event, float dt)
     player.velocity = sf::Vector2f(p->velX, p->velY);
     player.position += player.velocity * dt;
 
-    // Vérifier collisions
     playerCollision(player);
 }
 
@@ -80,5 +79,5 @@ void Server::packetReceivedRejoin(ENetEvent event)
     p->velocity = {0.f, 0.f};
 
     const double now = Utils::currentGameTime(gameStartTime);
-    p->respawnTime = now + 3.0; // invulnérabilité
+    p->respawnTime = now + 3.0;
 }
